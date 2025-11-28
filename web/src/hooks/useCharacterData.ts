@@ -1,0 +1,108 @@
+import { useState, useEffect, useRef } from "react";
+import { charactersAPI } from "../api";
+import type { CharacterFilters } from "./useCharacterFilters";
+import type {
+  FullCharacterResponse,
+  ItemUsageStats,
+  SkillUsageStats,
+} from "../types";
+
+export interface CharacterData {
+  characters: FullCharacterResponse[];
+  itemUsage: ItemUsageStats[];
+  skillUsage: SkillUsageStats[];
+  breakdown: Record<string, number>;
+  total: number;
+}
+
+interface UseCharacterDataReturn {
+  data: CharacterData | null;
+  error: Error | null;
+  isLoading: boolean;
+}
+
+export function useCharacterData(
+  filters: CharacterFilters
+): UseCharacterDataReturn {
+  const [data, setData] = useState<CharacterData | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const hasInitiallyFetched = useRef(false);
+  const isLoading = useRef(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchData() {
+      //if (isLoading.current) return;
+
+      isLoading.current = true;
+
+      try {
+        const [charactersData, itemsData, skillsData] = await Promise.all([
+          charactersAPI.getCharacters(filters.gameMode, {
+            requiredClasses: filters.classFilter,
+            requiredItems: filters.itemFilter,
+            requiredSkills:
+              filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            levelRange: { min: filters.minLevel, max: filters.maxLevel },
+            season: filters.season,
+          }),
+          charactersAPI.getItemUsage(filters.gameMode, {
+            requiredClasses: filters.classFilter,
+            levelRange: { min: filters.minLevel, max: filters.maxLevel },
+            requiredItems: filters.itemFilter,
+            requiredSkills:
+              filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            season: filters.season,
+          }),
+          charactersAPI.getSkillUsage(filters.gameMode, {
+            requiredClasses: filters.classFilter,
+            levelRange: { min: filters.minLevel, max: filters.maxLevel },
+            requiredItems: filters.itemFilter,
+            requiredSkills:
+              filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            season: filters.season,
+          }),
+        ]);
+
+        if (mounted) {
+          setData({
+            characters: charactersData.characters,
+            itemUsage: itemsData,
+            skillUsage: skillsData,
+            breakdown: charactersData.breakdown,
+            total: charactersData.total,
+          });
+          setError(null);
+          hasInitiallyFetched.current = true;
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err as Error);
+        }
+      } finally {
+        isLoading.current = false;
+      }
+    }
+
+    fetchData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    filters.gameMode,
+    filters.classFilter,
+    filters.itemFilter,
+    filters.skillFilter,
+    filters.minLevel,
+    filters.maxLevel,
+    filters.season,
+  ]);
+
+  return {
+    data,
+    error,
+    isLoading: !hasInitiallyFetched.current,
+  };
+}

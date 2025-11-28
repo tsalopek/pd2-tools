@@ -1,0 +1,635 @@
+//@ts-nocheck
+import request from "supertest";
+import express, { Application } from "express";
+import characterRoutes from "./characters";
+import economyRoutes from "./economy";
+import statisticsRoutes from "./statistics";
+import healthRoutes from "./health";
+import { characterDB, economyDB } from "../database";
+
+jest.mock("../utils/cache", () => ({
+  getCacheValue: jest.fn(() => undefined), // Default: no cache hit
+  setCacheValue: jest.fn(),
+  deleteCacheValue: jest.fn(),
+  clearCache: jest.fn(),
+}));
+
+jest.mock("../database", () => ({
+  characterDB: {
+    getFilteredCharacters: jest.fn(),
+    getCharacterByName: jest.fn(),
+    getLevelDistributions: jest.fn(),
+    analyzeItemUsage: jest.fn(),
+    analyzeSkillUsage: jest.fn(),
+    getOnlinePlayersHistory: jest.fn(),
+  },
+  economyDB: {
+    getUniqueItemNames: jest.fn(),
+    getListingsByDataDate: jest.fn(),
+    getListingsByIngestionDate: jest.fn(),
+  },
+}));
+
+jest.mock("../config", () => ({
+  config: {
+    currentSeason: 12,
+    apiVersion: "v1",
+  },
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    createNamedLogger: jest.fn(() => ({
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+    })),
+  },
+}));
+
+describe("API Routes", () => {
+  let app: Application;
+
+  beforeEach(() => {
+    app = express();
+    app.use(express.json());
+    app.use("/api/v1/characters", characterRoutes);
+    app.use("/api/v1/economy", economyRoutes);
+    app.use("/api/v1/statistics", statisticsRoutes);
+    app.use("/api/v1/health", healthRoutes);
+
+    jest.clearAllMocks();
+  });
+
+  describe("Character Routes", () => {
+    describe("GET /api/v1/characters", () => {
+      it("should return filtered characters with default parameters", async () => {
+        const mockResult = {
+          total: 100,
+          characters: [{ name: "TestChar", level: 90 }],
+          breakdown: { softcore: 60, hardcore: 40 },
+        };
+
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue(
+          mockResult
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters")
+          .expect(200);
+
+        expect(response.body).toEqual(mockResult);
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({ season: 12 }),
+          1,
+          50
+        );
+      });
+
+      it("should filter by level range", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue({
+          total: 10,
+          characters: [],
+          breakdown: {},
+        });
+
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ minLevel: 80, maxLevel: 99 })
+          .expect(200);
+
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({
+            levelRange: { min: 80, max: 99 },
+          }),
+          1,
+          50
+        );
+      });
+
+      it("should filter by classes", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue({
+          total: 5,
+          characters: [],
+          breakdown: {},
+        });
+
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ classes: "Sorceress,Paladin" })
+          .expect(200);
+
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({
+            requiredClasses: ["Sorceress", "Paladin"],
+          }),
+          1,
+          50
+        );
+      });
+
+      it("should filter by items", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue({
+          total: 3,
+          characters: [],
+          breakdown: {},
+        });
+
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ items: "Shako,Enigma" })
+          .expect(200);
+
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({
+            requiredItems: ["Shako", "Enigma"],
+          }),
+          1,
+          50
+        );
+      });
+
+      it("should filter by season", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue({
+          total: 20,
+          characters: [],
+          breakdown: {},
+        });
+
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ season: 11 })
+          .expect(200);
+
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({ season: 11 }),
+          1,
+          50
+        );
+      });
+
+      it("should handle pagination", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue({
+          total: 100,
+          characters: [],
+          breakdown: {},
+        });
+
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ page: 3, pageSize: 25 })
+          .expect(200);
+
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.any(Object),
+          3,
+          25
+        );
+      });
+
+      it("should return 400 for invalid season", async () => {
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ season: "invalid" })
+          .expect(400);
+      });
+
+      it("should handle database errors", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockRejectedValue(
+          new Error("Database error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch characters" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/characters/:name", () => {
+      it("should return character by name", async () => {
+        const mockCharacter = {
+          character: { name: "TestChar", level: 90 },
+          items: [],
+        };
+
+        (characterDB.getCharacterByName as jest.Mock).mockResolvedValue(
+          mockCharacter
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar")
+          .expect(200);
+
+        expect(response.body).toEqual(mockCharacter);
+        expect(characterDB.getCharacterByName).toHaveBeenCalledWith(
+          "softcore",
+          "TestChar",
+          12
+        );
+      });
+
+      it("should handle different game modes", async () => {
+        (characterDB.getCharacterByName as jest.Mock).mockResolvedValue({});
+
+        await request(app)
+          .get("/api/v1/characters/TestChar")
+          .query({ gameMode: "hardcore" })
+          .expect(200);
+
+        expect(characterDB.getCharacterByName).toHaveBeenCalledWith(
+          "hardcore",
+          "TestChar",
+          12
+        );
+      });
+
+      it("should handle season parameter", async () => {
+        (characterDB.getCharacterByName as jest.Mock).mockResolvedValue({});
+
+        await request(app)
+          .get("/api/v1/characters/TestChar")
+          .query({ season: 11 })
+          .expect(200);
+
+        expect(characterDB.getCharacterByName).toHaveBeenCalledWith(
+          "softcore",
+          "TestChar",
+          11
+        );
+      });
+
+      it("should return 404 when character not found", async () => {
+        (characterDB.getCharacterByName as jest.Mock).mockResolvedValue(null);
+
+        const response = await request(app)
+          .get("/api/v1/characters/NonExistent")
+          .expect(404);
+
+        expect(response.body).toEqual({
+          error: { message: "Character not found" },
+        });
+      });
+
+      it("should handle database errors", async () => {
+        (characterDB.getCharacterByName as jest.Mock).mockRejectedValue(
+          new Error("Database error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch character" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/characters/stats/level-distribution", () => {
+      it("should return level distribution", async () => {
+        const mockDistribution = {
+          softcore: { 90: 50, 91: 30, 92: 20 },
+          hardcore: { 90: 10, 91: 5 },
+        };
+
+        (characterDB.getLevelDistributions as jest.Mock).mockResolvedValue(
+          mockDistribution
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/level-distribution")
+          .expect(200);
+
+        expect(response.body).toEqual(mockDistribution);
+      });
+
+      it("should filter by season", async () => {
+        (characterDB.getLevelDistributions as jest.Mock).mockResolvedValue({});
+
+        await request(app)
+          .get("/api/v1/characters/stats/level-distribution")
+          .query({ season: 11 })
+          .expect(200);
+
+        expect(characterDB.getLevelDistributions).toHaveBeenCalledWith(11);
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.getLevelDistributions as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/level-distribution")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch level distribution" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/characters/stats/item-usage", () => {
+      it("should return item usage statistics", async () => {
+        const mockUsage = [
+          { itemName: "Shako", usageCount: 100, percentage: 50 },
+        ];
+
+        (characterDB.analyzeItemUsage as jest.Mock).mockResolvedValue(
+          mockUsage
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/item-usage")
+          .expect(200);
+
+        expect(response.body).toEqual(mockUsage);
+      });
+
+      it("should apply filters", async () => {
+        (characterDB.analyzeItemUsage as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/stats/item-usage")
+          .query({
+            gameMode: "hardcore",
+            minLevel: 90,
+            maxLevel: 99,
+            classes: "Sorceress",
+            season: 11,
+          })
+          .expect(200);
+
+        expect(characterDB.analyzeItemUsage).toHaveBeenCalledWith("hardcore", {
+          levelRange: { min: 90, max: 99 },
+          requiredClasses: ["Sorceress"],
+          season: 11,
+        });
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.analyzeItemUsage as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/item-usage")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to analyze item usage" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/characters/stats/skill-usage", () => {
+      it("should return skill usage statistics", async () => {
+        const mockUsage = [
+          {
+            skillName: "Blessed Hammer",
+            usageCount: 80,
+            percentage: 40,
+          },
+        ];
+
+        (characterDB.analyzeSkillUsage as jest.Mock).mockResolvedValue(
+          mockUsage
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/skill-usage")
+          .expect(200);
+
+        expect(response.body).toEqual(mockUsage);
+      });
+
+      it("should apply filters", async () => {
+        (characterDB.analyzeSkillUsage as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/stats/skill-usage")
+          .query({
+            gameMode: "softcore",
+            minLevel: 85,
+            classes: "Paladin,Sorceress",
+            season: 12,
+          })
+          .expect(200);
+
+        expect(characterDB.analyzeSkillUsage).toHaveBeenCalledWith("softcore", {
+          levelRange: { min: 85 },
+          requiredClasses: ["Paladin", "Sorceress"],
+          season: 12,
+        });
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.analyzeSkillUsage as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/skill-usage")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to analyze skill usage" },
+        });
+      });
+    });
+  });
+
+  describe("Economy Routes", () => {
+    describe("GET /api/v1/economy/items", () => {
+      it("should return unique item names", async () => {
+        const mockItems = ["Shako", "Griffons", "Enigma"];
+
+        (economyDB.getUniqueItemNames as jest.Mock).mockResolvedValue(
+          mockItems
+        );
+
+        const response = await request(app)
+          .get("/api/v1/economy/items")
+          .expect(200);
+
+        expect(response.body).toEqual(mockItems);
+      });
+
+      it("should filter by season", async () => {
+        (economyDB.getUniqueItemNames as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/economy/items")
+          .query({ season: 11 })
+          .expect(200);
+
+        expect(economyDB.getUniqueItemNames).toHaveBeenCalledWith(11);
+      });
+
+      it("should handle errors", async () => {
+        (economyDB.getUniqueItemNames as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/economy/items")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch item names" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/economy/listings/:itemName", () => {
+      it("should return listings for item by date", async () => {
+        const mockListings = [
+          {
+            itemName: "Shako",
+            priceStr: "1 HR",
+            numericalPrice: 1.0,
+          },
+        ];
+
+        (economyDB.getListingsByDataDate as jest.Mock).mockResolvedValue(
+          mockListings
+        );
+
+        const response = await request(app)
+          .get("/api/v1/economy/listings/Shako")
+          .query({ date: "2025-01-01" })
+          .expect(200);
+
+        expect(response.body).toEqual(mockListings);
+        expect(economyDB.getListingsByDataDate).toHaveBeenCalledWith(
+          "Shako",
+          "2025-01-01",
+          undefined
+        );
+      });
+
+      it("should return listings by ingestion date", async () => {
+        const mockListings = [{ itemName: "SOJ", priceStr: "0.5 HR" }];
+
+        (economyDB.getListingsByIngestionDate as jest.Mock).mockResolvedValue(
+          mockListings
+        );
+
+        await request(app)
+          .get("/api/v1/economy/listings/SOJ")
+          .query({ ingestionDate: "2025-01-15" })
+          .expect(200);
+
+        expect(economyDB.getListingsByIngestionDate).toHaveBeenCalledWith(
+          "SOJ",
+          "2025-01-15",
+          undefined
+        );
+      });
+
+      it("should filter by season", async () => {
+        (economyDB.getListingsByDataDate as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/economy/listings/Shako")
+          .query({ date: "2025-01-01", season: 11 })
+          .expect(200);
+
+        expect(economyDB.getListingsByDataDate).toHaveBeenCalledWith(
+          "Shako",
+          "2025-01-01",
+          11
+        );
+      });
+
+      it("should return 400 when no date parameter provided", async () => {
+        const response = await request(app)
+          .get("/api/v1/economy/listings/Shako")
+          .expect(400);
+
+        expect(response.body).toEqual({
+          error: {
+            message: "Either date or ingestionDate query parameter is required",
+          },
+        });
+      });
+
+      it("should handle errors", async () => {
+        (economyDB.getListingsByDataDate as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/economy/listings/Shako")
+          .query({ date: "2025-01-01" })
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch listings" },
+        });
+      });
+    });
+  });
+
+  describe("Statistics Routes", () => {
+    describe("GET /api/v1/statistics/online-players", () => {
+      it("should return online players history", async () => {
+        const mockHistory = [
+          { timestamp: "2025-01-01", online: 1000, inGame: 500 },
+        ];
+
+        (characterDB.getOnlinePlayersHistory as jest.Mock).mockResolvedValue(
+          mockHistory
+        );
+
+        const response = await request(app)
+          .get("/api/v1/statistics/online-players")
+          .expect(200);
+
+        expect(response.body).toEqual(mockHistory);
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.getOnlinePlayersHistory as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/statistics/online-players")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: {
+            message: "Failed to fetch online players history",
+          },
+        });
+      });
+    });
+  });
+
+  describe("Health Routes", () => {
+    describe("GET /api/v1/health", () => {
+      it("should return health status", async () => {
+        const response = await request(app).get("/api/v1/health").expect(200);
+
+        expect(response.body).toEqual({
+          status: "ok",
+          timestamp: expect.any(String),
+          uptime: expect.any(Number),
+        });
+      });
+    });
+  });
+});

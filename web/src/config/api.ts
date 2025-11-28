@@ -1,0 +1,31 @@
+// API Configuration
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://api.pd2.tools/api/v1";
+
+// External Services (for now just export api)
+export const EXTERNAL_SERVICES = {
+  characterExport: "https://character-export.pd2.tools",
+} as const;
+
+// API Endpoints
+export const API_ENDPOINTS = {
+  // Characters
+  characters: "/characters",
+  character: "/characters",
+  itemUsage: "/characters/stats/item-usage",
+  skillUsage: "/characters/stats/skill-usage",
+  levelDistribution: "/characters/stats/level-distribution",
+
+  // Economy
+  economyItems: "/economy/items",
+  economyListings: "/economy/listings",
+  economyListingsCount: "/economy/listings-count",
+
+  // Statistics
+  onlinePlayers: "/statistics/online-players",
+  onlinePlayersLast: "/statistics/online-players-last",
+  characterCounts: "/statistics/character-counts",
+
+  // Health
+  health: "/health",
+} as const;

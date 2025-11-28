@@ -1,0 +1,94 @@
+import { useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
+import Cookies from "js-cookie";
+import debounce from "lodash/debounce";
+
+export interface SkillRequirement {
+  name: string;
+  minLevel: number;
+}
+
+export interface CharacterFilters {
+  gameMode: string;
+  classFilter: string[];
+  itemFilter: string[];
+  skillFilter: SkillRequirement[];
+  searchQuery: string;
+  minLevel: number;
+  maxLevel: number;
+  season: number;
+}
+
+interface UseCharacterFiltersReturn {
+  filters: CharacterFilters;
+  updateFilters: (updates: Partial<CharacterFilters>) => void;
+}
+
+const updateUrlWithoutRerender = debounce((filters: CharacterFilters) => {
+  const params = new URLSearchParams();
+  if (filters.gameMode !== "softcore") params.set("gameMode", filters.gameMode);
+  if (filters.classFilter.length)
+    params.set("class", filters.classFilter.join(","));
+  if (filters.itemFilter.length)
+    params.set("items", filters.itemFilter.join(","));
+  if (filters.skillFilter.length)
+    params.set("skills", JSON.stringify(filters.skillFilter));
+  if (filters.searchQuery) params.set("query", filters.searchQuery);
+  if (filters.season !== 12) params.set("season", filters.season.toString());
+
+  const newUrl = params.toString()
+    ? `?${params.toString()}`
+    : window.location.pathname;
+  window.history.replaceState(null, "", newUrl);
+}, 500);
+
+export function useCharacterFilters(): UseCharacterFiltersReturn {
+  const [searchParams] = useSearchParams();
+
+  const [filters, setFilters] = useState<CharacterFilters>(() => {
+    const levelRangeCookie = Cookies.get("levelRange");
+    const levelRange = levelRangeCookie
+      ? JSON.parse(levelRangeCookie)
+      : { min: 94, max: 99 };
+
+    return {
+      gameMode: searchParams.get("gameMode") || "softcore",
+      classFilter: searchParams.get("class")?.split(",").filter(Boolean) || [],
+      itemFilter: searchParams.get("items")?.split(",").filter(Boolean) || [],
+      skillFilter: (() => {
+        const skillsParam = searchParams.get("skills");
+        if (skillsParam) {
+          try {
+            return JSON.parse(decodeURIComponent(skillsParam));
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      })(),
+      searchQuery: searchParams.get("query") || "",
+      minLevel: parseInt(
+        searchParams.get("minLevel") || levelRange.min.toString()
+      ),
+      maxLevel: parseInt(
+        searchParams.get("maxLevel") || levelRange.max.toString()
+      ),
+      season: parseInt(searchParams.get("season") || "12"),
+    };
+  });
+
+  const updateFilters = useCallback((updates: Partial<CharacterFilters>) => {
+    setFilters((prev) => {
+      const newFilters = { ...prev, ...updates };
+
+      // Only update URL if it's not just a level change
+      if (!updates.minLevel && !updates.maxLevel) {
+        updateUrlWithoutRerender(newFilters);
+      }
+
+      return newFilters;
+    });
+  }, []);
+
+  return { filters, updateFilters };
+}

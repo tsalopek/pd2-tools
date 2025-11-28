@@ -1,0 +1,174 @@
+import React, { useMemo } from "react";
+import { Card, Flex, Text, Paper, ScrollArea, ActionIcon } from "@mantine/core";
+import { IconX } from "@tabler/icons-react";
+import type { CharacterFilters } from "../../../hooks";
+
+const classes = [
+  "Amazon",
+  "Sorceress",
+  "Assassin",
+  "Barbarian",
+  "Druid",
+  "Necromancer",
+  "Paladin",
+];
+
+type Breakdown = {
+  Amazon: number;
+  Sorceress: number;
+  Assassin: number;
+  Barbarian: number;
+  Druid: number;
+  Necromancer: number;
+  Paladin: number;
+  total: number;
+};
+
+interface Props {
+  breakdown: Record<string, number>;
+  filters: Pick<CharacterFilters, "classFilter" | "searchQuery">;
+  updateFilters: (filters: Partial<{ classFilter: string[] }>) => void;
+}
+
+export default function ClassCard({
+  breakdown,
+  filters,
+  updateFilters,
+}: Props) {
+  // Create memoized Set for O(1) lookups
+  const selectedClassesSet = useMemo(
+    () => new Set(filters.classFilter),
+    [filters.classFilter]
+  );
+
+  const handleClassSelect = (className: string) => {
+    const newClassFilter = selectedClassesSet.has(className)
+      ? filters.classFilter.filter((c) => c !== className)
+      : [...filters.classFilter, className];
+    updateFilters({ classFilter: newClassFilter });
+  };
+
+  const filteredClasses = useMemo(() => {
+    const searchQuery = filters.searchQuery?.toLowerCase() || "";
+    const total = breakdown.total || 0;
+
+    // Single pass for filtering, mapping, and sorting
+    return classes
+      .reduce(
+        (acc, charClass) => {
+          // Skip if percentage is 0
+          const count = breakdown[charClass as keyof Breakdown] || 0;
+          if (count === 0) return acc;
+
+          // Skip if doesn't match search
+          if (searchQuery && !charClass.toLowerCase().startsWith(searchQuery)) {
+            return acc;
+          }
+
+          acc.push({
+            name: charClass,
+            percentage: total > 0 ? (count / total) * 100 : 0,
+            isSelected: selectedClassesSet.has(charClass),
+          });
+          return acc;
+        },
+        [] as Array<{
+          name: string;
+          percentage: number;
+          isSelected: boolean;
+        }>
+      )
+      .sort((a, b) => b.percentage - a.percentage);
+  }, [breakdown, filters.searchQuery, selectedClassesSet]);
+
+  const hasClasses = filteredClasses.length > 0;
+
+  return (
+    <Card
+      p={0}
+      withBorder
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        maxHeight: "400px",
+        height: hasClasses ? undefined : "auto",
+      }}
+    >
+      <div
+        style={{
+          padding: "6px",
+        }}
+      >
+        <Text fw={700}>CLASSES</Text>
+      </div>
+
+      {hasClasses ? (
+        <ScrollArea style={{ flex: 1 }}>
+          {filteredClasses.map(({ name, percentage, isSelected }) => (
+            <Paper
+              key={name}
+              withBorder
+              radius={0}
+              p="5"
+              style={{
+                cursor: "pointer",
+                borderLeft: "none",
+                borderRight: "none",
+                position: "relative",
+                overflow: "hidden",
+                backgroundColor: isSelected
+                  ? "rgba(0, 255, 0, 0.2)"
+                  : undefined,
+              }}
+              variant="hover"
+              onClick={(e) => {
+                const backgroundBar = e.currentTarget.querySelector(
+                  'div[style*="position: absolute"]'
+                ) as HTMLElement | null;
+                if (backgroundBar) {
+                  backgroundBar.style.width = "0%";
+                }
+                handleClassSelect(name);
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: `${percentage}%`,
+                  backgroundColor: "rgba(0, 255, 0, 0.2)",
+                  zIndex: 0,
+                }}
+              />
+              <Flex
+                justify="space-between"
+                align="center"
+                style={{ position: "relative", zIndex: 1 }}
+              >
+                <Text>{name}</Text>
+                {isSelected ? (
+                  <ActionIcon
+                    size="xs"
+                    variant="default"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClassSelect(name);
+                    }}
+                  >
+                    <IconX size={14} />
+                  </ActionIcon>
+                ) : (
+                  <Text>{percentage.toFixed(1)}%</Text>
+                )}
+              </Flex>
+            </Paper>
+          ))}
+        </ScrollArea>
+      ) : (
+        <></>
+      )}
+    </Card>
+  );
+}
