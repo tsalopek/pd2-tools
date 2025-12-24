@@ -18,7 +18,7 @@ import { useDisclosure } from "@mantine/hooks";
 import classes from "./HeaderSearch.module.css";
 import { useLocation } from "react-router-dom";
 import { useNavbarStats, useTerrorZone } from "../../../hooks";
-
+import { SupportBanner } from "../Banner";
 const links = [
   { link: "/builds", label: "Builds" },
   { link: "/economy/currency", label: "Economy" },
@@ -228,6 +228,7 @@ export function HeaderSearch() {
 
   return (
     <>
+     <SupportBanner />
       <Box
         visibleFrom="md"
         style={{
