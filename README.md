@@ -23,7 +23,6 @@ This repository includes everything except the [character exporter](https://pd2.
 4. `npm run build`
 5. `npm start` to start the API
 6. `npm run jobs` to run background jobs (player count tracking and character scraper)
-6. For testing you'd fill out the test db details at the top of `src/database/economy.test.ts` and `src/database/index.test.ts` and then run `npm test`
 
 **Frontend:**
 

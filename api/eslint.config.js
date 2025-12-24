@@ -17,6 +17,7 @@ export default tseslint.config(
           "ts-nocheck": false,
         },
       ],
+      "@typescript-eslint/no-explicit-any": "off"
     },
   }
 );

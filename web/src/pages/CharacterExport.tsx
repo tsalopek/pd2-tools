@@ -112,8 +112,8 @@ export default function CharacterExport() {
         err.message.includes("HTTP error")
           ? "Character not found or server error"
           : err.message.includes("Invalid Base64")
-            ? "Invalid file data received"
-            : "An unexpected error occurred"
+          ? "Invalid file data received"
+          : "An unexpected error occurred"
       );
     },
     onSuccess: (base64Data) => handleDownload(base64Data),
@@ -170,52 +170,31 @@ export default function CharacterExport() {
 
       <Container size={rem(900)} px={isMobile ? rem(20) : rem(40)} mb={rem(20)}>
         <Center>
-<Alert
-
+          <Alert
             icon={<IconAlertTriangle size="1rem" />}
-
             title="Having trouble exporting?"
-
             color="blue"
-
             variant="light"
-
             my={"md"}
-
             maw={rem(600)}
-
             w={"100%"}
-
           >
-
             <Text size="sm">
-
               If you are having trouble exporting your character, we recommend
-
               you use Dominis's character exporter at{" "}
-
               <Anchor
-
                 href="https://exiledagain.github.io/bug-free-eureka/export.html"
-
                 target="_blank"
-
                 rel="noopener noreferrer"
-
               >
-
                 exiledagain.github.io/bug-free-eureka/export.html
-
               </Anchor>
-
               .
-
             </Text>
-
           </Alert>
-
-        </Center><Center>
-	<Accordion variant="contained" my={"md"} maw={rem(600)} w={"100%"}>
+        </Center>
+        <Center>
+          <Accordion variant="contained" my={"md"} maw={rem(600)} w={"100%"}>
             <Accordion.Item value="disclaimer">
               <Accordion.Control
                 icon={<IconAlertTriangle size="1rem" color="orange" />}
