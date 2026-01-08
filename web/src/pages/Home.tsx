@@ -25,6 +25,32 @@ import CountUp from "react-countup";
 import { charactersAPI, economyAPI } from "../api";
 import type { HomeStats } from "../types";
 
+const CACHE_KEY = "pd2tools_home_stats";
+const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+interface CachedHomeStats extends HomeStats {
+  timestamp: number;
+}
+
+function getCachedHomeStats(): CachedHomeStats | null {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch {}
+  return null;
+}
+
+function setCachedHomeStats(stats: HomeStats) {
+  try {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ ...stats, timestamp: Date.now() })
+    );
+  } catch {}
+}
+
 const tools = [
   {
     name: "Build Viewer",
@@ -72,11 +98,32 @@ const tools = [
 ];
 
 export default function Home() {
-  const [stats, setStats] = useState<HomeStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = getCachedHomeStats();
+  const [stats, setStats] = useState<HomeStats | null>(cached ? {
+    totalCharacters: cached.totalCharacters,
+    totalExports: cached.totalExports,
+    totalEconomyItems: cached.totalEconomyItems,
+    totalListings: cached.totalListings,
+  } : null);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     async function fetchStats() {
+      const cached = getCachedHomeStats();
+      const now = Date.now();
+
+      // Use cached values if fresh enough
+      if (cached && now - cached.timestamp < CACHE_DURATION_MS) {
+        setStats({
+          totalCharacters: cached.totalCharacters,
+          totalExports: cached.totalExports,
+          totalEconomyItems: cached.totalEconomyItems,
+          totalListings: cached.totalListings,
+        });
+        setLoading(false);
+        return;
+      }
+
       try {
         const [charactersData, exportCount, economyItems, listingsCount] =
           await Promise.allSettled([
@@ -107,12 +154,15 @@ export default function Home() {
             ? listingsCount.value.total || 0
             : 0;
 
-        setStats({
+        const newStats = {
           totalCharacters,
           totalExports,
           totalEconomyItems,
           totalListings,
-        });
+        };
+
+        setCachedHomeStats(newStats);
+        setStats(newStats);
       } catch (err) {
         console.error("Failed to fetch home page stats:", err);
         setStats(null);

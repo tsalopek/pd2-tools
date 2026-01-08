@@ -1,7 +1,6 @@
 import { Button, Card, Image, Text, Title } from "@mantine/core";
 import { IconExternalLink } from "@tabler/icons-react";
 import RelativeTime from "@yaireo/relative-time";
-import ExportButton from "./ExportButton";
 import type { CharacterHeaderProps } from "../../types";
 
 const relativeTime = new RelativeTime();
@@ -70,26 +69,23 @@ export function CharacterHeader({
             </div>
           </div>
           {!isMobile && (
-            <>
-              <ExportButton characterName={characterName} />
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "0",
-                  right: "0",
-                  textAlign: "right",
-                  marginBottom: "4px",
-                  marginRight: "6px",
-                }}
-              >
-                <Text size="xs">
-                  Last updated:{" "}
-                  {lastUpdated
-                    ? relativeTime.from(new Date(lastUpdated))
-                    : "Unknown"}
-                </Text>
-              </div>
-            </>
+            <div
+              style={{
+                position: "absolute",
+                bottom: "0",
+                right: "0",
+                textAlign: "right",
+                marginBottom: "4px",
+                marginRight: "6px",
+              }}
+            >
+              <Text size="xs">
+                Last updated:{" "}
+                {lastUpdated
+                  ? relativeTime.from(new Date(lastUpdated))
+                  : "Unknown"}
+              </Text>
+            </div>
           )}
         </div>
       </Card>

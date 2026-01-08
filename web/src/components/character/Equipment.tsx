@@ -4,6 +4,46 @@ import { Text, Tooltip } from "@mantine/core";
 // Scaling factor: 0 = 0%, 1 = 100% of original size
 const SCALE_FACTOR = 0.8; // 80% of original size
 
+// Rarity colors
+const getRarityColor = (item: any): string | null => {
+  if (!item) return null;
+  if (item.is_runeword) return "#B8860B"; // Runeword - gold
+  switch (item.quality?.name?.toLowerCase()) {
+    case "unique":
+      return "#c17d3a"; // Unique - brownish orange
+    case "set":
+      return "#1eed0e"; // Set - bright green
+    case "rare":
+      return "#ffff00"; // Rare - yellow
+    case "magic":
+      return "#4545ff"; // Magic - blue
+    case "crafted":
+      return "#ffa800"; // Crafted - orange
+    default:
+      return null; // Normal/white items - no special color
+  }
+};
+
+// Border color for equipment slots
+const getRarityBorderColor = (item: any): string => {
+  return getRarityColor(item) || "#374151";
+};
+
+// Convert hex to rgba
+const hexToRgba = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// Gradient background for tooltips based on rarity
+const getRarityGradient = (item: any): string => {
+  const color = getRarityColor(item);
+  if (!color) return "transparent";
+  return `linear-gradient(to bottom, ${hexToRgba(color, 0.25)} 0%, ${hexToRgba(color, 0.08)} 20%, transparent 35%)`;
+};
+
 const ItemsWithImages = new Set([
   "Stalker's Cull",
   "Atma's Scarab",
@@ -72,31 +112,25 @@ const BASE_SIZES = {
 const scale = (size) => Math.round(size * SCALE_FACTOR);
 
 const ItemTooltip = ({ item }) => {
-  const getQualityColor = (quality, item) => {
-    if (item.is_runeword) return "#B8860B";
-    switch (quality?.name?.toLowerCase()) {
-      case "unique":
-        return "#c17d3a";
-      case "set":
-        return "#1eed0e";
-      case "rare":
-        return "#ffff00";
-      case "magic":
-        return "#4545ff";
-      case "crafted":
-        return "#ffa800";
-      default:
-        return "#ffffff";
-    }
+  const getQualityColor = () => {
+    return getRarityColor(item) || "#ffffff";
   };
 
   if (!item) return null;
 
   return (
-    <div style={{ fontSize: `15px` }}>
+    <div
+      style={{
+        fontSize: "15px",
+        background: getRarityGradient(item),
+        margin: "-12px",
+        padding: "12px",
+        borderRadius: "4px",
+      }}
+    >
       <div
         style={{
-          color: getQualityColor(item.quality, item),
+          color: getQualityColor(),
           fontWeight: "bold",
         }}
       >
@@ -240,7 +274,7 @@ const EquipmentSlot = ({
       styles={{
         tooltip: {
           backgroundColor: "rgba(0, 0, 0, 0.95)",
-          border: "2px solid #666",
+          border: `1px solid ${getRarityBorderColor(item)}`,
           padding: `${scale(12)}px`,
           maxWidth: `${scale(400 + 200)}px`,
           width: "max-content",
@@ -251,7 +285,7 @@ const EquipmentSlot = ({
         style={{
           width,
           height,
-          border: "1px solid #374151",
+          border: `0.5px solid ${getRarityBorderColor(item)}`,
           cursor: item ? "pointer" : "default",
           ...style,
         }}

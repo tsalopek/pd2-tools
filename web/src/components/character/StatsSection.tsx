@@ -1,6 +1,89 @@
-import { ActionIcon, Card, Text, Tooltip } from "@mantine/core";
+import { ActionIcon, Card, Text, Tooltip, Divider } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import type { StatsSectionProps } from "../../types";
+
+// Color definitions for consistency
+const COLORS = {
+  life: "rgb(239, 78, 78)",
+  mana: "rgb(36, 135, 235)",
+  strength: "rgb(239, 78, 78)",
+  dexterity: "rgb(49, 180, 56)",
+  vitality: "rgb(239, 78, 78)",
+  energy: "rgb(36, 135, 235)",
+  fire: "rgb(148, 0, 0)",
+  cold: "rgb(54, 99, 145)",
+  lightning: "rgb(255, 217, 0)",
+  poison: "#00991c",
+} as const;
+
+interface StatRowProps {
+  label: string;
+  value: number | string;
+  secondValue?: number | string;
+  color?: string;
+  separator?: string;
+  isLast?: boolean;
+}
+
+function StatRow({
+  label,
+  value,
+  secondValue,
+  color,
+  separator = "/",
+  isLast = false,
+}: StatRowProps) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "6px 0",
+        borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
+      }}
+    >
+      <Text size="sm">
+        {label}
+      </Text>
+      <Text size="sm" fw={500}>
+        <span style={{ color: color }}>{value}</span>
+        {secondValue !== undefined && (
+          <>
+            {" "}
+            {separator}{" "}
+            <span style={{ color: color }}>{secondValue}</span>
+          </>
+        )}
+      </Text>
+    </div>
+  );
+}
+
+interface StatGroupProps {
+  title: string;
+  tooltip?: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function StatGroup({ title, tooltip, children }: StatGroupProps) {
+  return (
+    <div style={{ minWidth: "180px", flex: "1 1 0" }}>
+      <Text fw={700} size="sm" ta="center" mb="xs">
+        {title}
+        {tooltip && (
+          <Tooltip multiline label={tooltip} withArrow>
+            <IconInfoCircle
+              size={12}
+              style={{ marginLeft: "6px", cursor: "help", opacity: 0.7 }}
+            />
+          </Tooltip>
+        )}
+      </Text>
+      <div>{children}</div>
+    </div>
+  );
+}
 
 export function StatsSection({
   attributes,
@@ -8,214 +91,136 @@ export function StatsSection({
   realStats,
 }: StatsSectionProps) {
   return (
-    <Card h="665px" radius="md" shadow="md">
-      <Card.Section style={{ marginBottom: "5px" }}>
-        <Card
-          radius="0"
-          style={{
-            backgroundColor: "rgb(44, 45, 50)",
-            borderBottomColor: "rgb(55, 58, 64)",
-            borderBottomWidth: "1.75px",
-            borderBottomStyle: "solid",
-          }}
-        >
-          <Card.Section>
-            <Text fw={500} style={{ marginLeft: "10px", marginTop: "4.15px" }}>
-              Stats
-              <div
-                style={{ float: "right", marginRight: "8px", marginTop: "2px" }}
-              >
-                <Tooltip
-                  multiline
-                  label={
-                    <>
-                      If you think one of the stats is wrong, please post the
-                      character in #bug-report in discord
-                    </>
-                  }
-                >
-                  <ActionIcon variant="subtle" color="gray" size="sm">
-                    <IconInfoCircle size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              </div>
-            </Text>
-          </Card.Section>
-        </Card>
+    <Card radius="md" shadow="md" padding="md">
+      {/* Header */}
+      <Card.Section
+        style={{
+          backgroundColor: "rgb(44, 45, 50)",
+          borderBottom: "1.75px solid rgb(55, 58, 64)",
+          padding: "8px 12px",
+          marginBottom: "12px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Text fw={500}>Stats</Text>
+          <Tooltip
+            multiline
+            withArrow
+            label="If you think one of the stats is wrong, please post the character in #bug-report in discord"
+          >
+            <ActionIcon variant="subtle" color="gray" size="sm">
+              <IconInfoCircle size={16} />
+            </ActionIcon>
+          </Tooltip>
+        </div>
       </Card.Section>
 
+      {/* Stats Content */}
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: "20px",
-          padding: "10px",
+          gap: "24px",
+          padding: "0 8px",
         }}
       >
         {/* Defensive Stats */}
-        <div style={{ minWidth: "200px", flex: "1 1 0", order: 1 }}>
-          <Text fw={700} style={{ marginTop: "0px" }}>
-            Defensive
-          </Text>
-          <Text size="sm">
-            Life:{" "}
-            <span style={{ color: "rgb(239, 78, 78)" }}>{stats.life}</span>
-          </Text>
-          <Text size="sm">
-            Mana:{" "}
-            <span style={{ color: "rgb(36, 135, 235)" }}>{stats.mana}</span>
-          </Text>
-        </div>
+        <StatGroup title="Defensive">
+          <StatRow label="Life" value={stats.life} color={COLORS.life} />
+          <StatRow label="Mana" value={stats.mana} color={COLORS.mana} isLast />
+        </StatGroup>
 
         {/* Attributes */}
-        <div style={{ minWidth: "200px", flex: "1 1 0", order: 2 }}>
-          <Text fw={700} style={{ marginTop: "0px" }}>
-            Attributes
-            <Tooltip
-              multiline
-              label={<>Base Attribute / Actual Attribute (with gear)</>}
-            >
-              <IconInfoCircle size={12} style={{ marginLeft: "6px" }} />
-            </Tooltip>
-          </Text>
-          <Text size="sm">
-            Strength:{" "}
-            <span style={{ color: "rgb(239, 78, 78)" }}>
-              {attributes.strength}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(239, 78, 78)" }}>
-              {realStats.strength}
-            </span>
-          </Text>
-          <Text size="sm">
-            Dexterity:{" "}
-            <span style={{ color: "rgb(49, 180, 56)" }}>
-              {attributes.dexterity}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(49, 180, 56)" }}>
-              {realStats.dexterity}
-            </span>
-          </Text>
-          <Text size="sm">
-            Vitality:{" "}
-            <span style={{ color: "rgb(239, 78, 78)" }}>
-              {attributes.vitality}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(239, 78, 78)" }}>
-              {realStats.vitality}
-            </span>
-          </Text>
-          <Text size="sm">
-            Energy:{" "}
-            <span style={{ color: "rgb(36, 135, 235)" }}>
-              {attributes.energy}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(36, 135, 235)" }}>
-              {realStats.energy}
-            </span>
-          </Text>
-        </div>
+        <StatGroup tooltip="Base Attribute / Actual Attribute (with gear)" title="Attributes">
+          <StatRow
+            label="Strength"
+            value={attributes.strength}
+            secondValue={realStats.strength}
+            color={COLORS.strength}
+          />
+          <StatRow
+            label="Dexterity"
+            value={attributes.dexterity}
+            secondValue={realStats.dexterity}
+            color={COLORS.dexterity}
+          />
+          <StatRow
+            label="Vitality"
+            value={attributes.vitality}
+            secondValue={realStats.vitality}
+            color={COLORS.vitality}
+          />
+          <StatRow
+            label="Energy"
+            value={attributes.energy}
+            secondValue={realStats.energy}
+            color={COLORS.energy}
+            isLast
+          />
+        </StatGroup>
 
         {/* Resistances */}
-        <div style={{ minWidth: "200px", flex: "1 1 0", order: 3 }}>
-          <Text fw={700} style={{ marginTop: "0px" }}>
-            Resistances
-            <Tooltip multiline label={<>Resist / Max Resist</>}>
-              <IconInfoCircle size={12} style={{ marginLeft: "6px" }} />
-            </Tooltip>
-          </Text>
-          <Text size="sm">
-            Fire:{" "}
-            <span style={{ color: "rgb(148, 0, 0)" }}>{realStats.fireRes}</span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(148, 0, 0)" }}>
-              {realStats.maxFireRes}
-            </span>
-          </Text>
-          <Text size="sm">
-            Cold:{" "}
-            <span style={{ color: "rgb(54, 99, 145)" }}>
-              {realStats.coldRes}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(54, 99, 145)" }}>
-              {realStats.maxColdRes}
-            </span>
-          </Text>
-          <Text size="sm">
-            Lightning:{" "}
-            <span style={{ color: "rgb(255, 217, 0)" }}>
-              {realStats.lightningRes}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(255, 217, 0)" }}>
-              {realStats.maxLightningRes}
-            </span>
-          </Text>
-          <Text size="sm">
-            Poison:{" "}
-            <span style={{ color: "#00991c" }}>{realStats.poisonRes}</span> /{" "}
-            <span style={{ color: "#00991c" }}>{realStats.maxPoisonRes}</span>
-          </Text>
-        </div>
+        <StatGroup tooltip="Resist / Max Resist" title="Resistances">
+          <StatRow
+            label="Fire"
+            value={realStats.fireRes}
+            secondValue={realStats.maxFireRes}
+            color={COLORS.fire}
+          />
+          <StatRow
+            label="Cold"
+            value={realStats.coldRes}
+            secondValue={realStats.maxColdRes}
+            color={COLORS.cold}
+          />
+          <StatRow
+            label="Lightning"
+            value={realStats.lightningRes}
+            secondValue={realStats.maxLightningRes}
+            color={COLORS.lightning}
+          />
+          <StatRow
+            label="Poison"
+            value={realStats.poisonRes}
+            secondValue={realStats.maxPoisonRes}
+            color={COLORS.poison}
+            isLast
+          />
+        </StatGroup>
 
         {/* Absorb */}
-        <div style={{ minWidth: "200px", flex: "1 1 0", order: 4 }}>
-          <Text fw={700} style={{ marginTop: "0px" }}>
-            Absorb
-            <Tooltip multiline label={<>Flat Absorb / % Absorb</>}>
-              <IconInfoCircle size={12} style={{ marginLeft: "6px" }} />
-            </Tooltip>
-          </Text>
-          <Text size="sm">
-            Fire:{" "}
-            <span style={{ color: "rgb(148, 0, 0)" }}>
-              {realStats.fAbsorbFlat}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(148, 0, 0)" }}>
-              {realStats.fAbsorbPct}%
-            </span>
-          </Text>
-          <Text size="sm">
-            Cold:{" "}
-            <span style={{ color: "rgb(54, 99, 145)" }}>
-              {realStats.cAbsorbFlat}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(54, 99, 145)" }}>
-              {realStats.cAbsorbPct}%
-            </span>
-          </Text>
-          <Text size="sm">
-            Lightning:{" "}
-            <span style={{ color: "rgb(255, 217, 0)" }}>
-              {realStats.lAbsorbFlat}
-            </span>{" "}
-            /{" "}
-            <span style={{ color: "rgb(255, 217, 0)" }}>
-              {realStats.lAbsorbPct}%
-            </span>
-          </Text>
-        </div>
+        <StatGroup tooltip="Flat Absorb / % Absorb" title="Absorb">
+          <StatRow
+            label="Fire"
+            value={realStats.fAbsorbFlat}
+            secondValue={`${realStats.fAbsorbPct}%`}
+            color={COLORS.fire}
+          />
+          <StatRow
+            label="Cold"
+            value={realStats.cAbsorbFlat}
+            secondValue={`${realStats.cAbsorbPct}%`}
+            color={COLORS.cold}
+          />
+          <StatRow
+            label="Lightning"
+            value={realStats.lAbsorbFlat}
+            secondValue={`${realStats.lAbsorbPct}%`}
+            color={COLORS.lightning}
+            isLast
+          />
+        </StatGroup>
 
         {/* Miscellaneous */}
-        <div style={{ minWidth: "200px", flex: "1 1 0", order: 5 }}>
-          <Text fw={700} style={{ marginTop: "0px" }}>
-            Miscellaneous
-          </Text>
-          <Text size="sm">Faster Cast Rate: {realStats.fcr}%</Text>
-          <Text size="sm">Faster Hit Recovery: {realStats.fhr}%</Text>
-          <Text size="sm">Faster Run/Walk: {realStats.frw}%</Text>
-          <Text size="sm">Gold Find: {realStats.gf}%</Text>
-          <Text size="sm">Increased Attack Speed: {realStats.ias}%</Text>
-          <Text size="sm">Magic Find: {realStats.mf}%</Text>
-          <Text size="sm">Physical Damage Reduction: {realStats.pdr}%</Text>
-        </div>
+        <StatGroup title="Miscellaneous">
+          <StatRow label="Faster Cast Rate" value={`${realStats.fcr}%`} />
+          <StatRow label="Faster Hit Recovery" value={`${realStats.fhr}%`} />
+          <StatRow label="Faster Run/Walk" value={`${realStats.frw}%`} />
+          <StatRow label="Increased Attack Speed" value={`${realStats.ias}%`} />
+          <StatRow label="Magic Find" value={`${realStats.mf}%`} />
+          <StatRow label="Gold Find" value={`${realStats.gf}%`} />
+          <StatRow label="Physical Damage Reduction" value={`${realStats.pdr}%`} isLast />
+        </StatGroup>
       </div>
     </Card>
   );

@@ -175,7 +175,7 @@ export default function CharacterExport() {
             title="Having trouble exporting?"
             color="blue"
             variant="light"
-            my={"md"}
+            mb={"md"}
             maw={rem(600)}
             w={"100%"}
           >
@@ -194,7 +194,7 @@ export default function CharacterExport() {
           </Alert>
         </Center>
         <Center>
-          <Accordion variant="contained" my={"md"} maw={rem(600)} w={"100%"}>
+          <Accordion variant="contained" mb={"md"} maw={rem(600)} w={"100%"}>
             <Accordion.Item value="disclaimer">
               <Accordion.Control
                 icon={<IconAlertTriangle size="1rem" color="orange" />}

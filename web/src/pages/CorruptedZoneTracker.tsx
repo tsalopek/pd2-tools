@@ -16,8 +16,8 @@ import {
 } from "@mantine/core";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Helmet } from "react-helmet";
-import { IconBrandDiscord } from "@tabler/icons-react";
 import { useInterval } from "usehooks-ts";
+import { DiscordIcon } from "../components/icons";
 import TerrorZoneCalculator from "../components/layout/NavBar/TerrorZoneCalculator";
 import {
   zoneImmunities,
@@ -257,7 +257,10 @@ export default function CorruptedZoneTracker() {
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
-            padding: 24,
+            paddingTop: 16,
+            paddingBottom: 24,
+            paddingLeft: 24,
+            paddingRight: 24,
           }}
         >
 	  <Card
@@ -272,7 +275,7 @@ export default function CorruptedZoneTracker() {
             }}
           >
             <Group gap="sm" align="center">
-              <IconBrandDiscord size={24} color="white" />
+              <DiscordIcon size={20} />
               <Text c="white" size="sm">
                 There is also a corrupted zone tracker with notifications in
                 Discord:{" "}

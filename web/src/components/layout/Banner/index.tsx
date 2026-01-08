@@ -1,19 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Box, Group, Text, Anchor, CloseButton, Title } from '@mantine/core';
+import { Box, Group, Text, CloseButton, Button, Title, Anchor } from '@mantine/core';
 import { IconStar } from '@tabler/icons-react';
+import { GitHubIcon } from '../../icons';
 
-const PAGEVIEW_KEY = 'pd2tools_pageviews';
-const DISMISSED_KEY = 'pd2tools_banner_dismissed';
-const PAGEVIEW_THRESHOLD = 10;
+const PAGEVIEW_KEY = 'pd2tools_pageviews_s12';
+const DISMISSED_KEY = 'pd2tools_banner_dismissed_at_s12';
+const PAGEVIEW_THRESHOLD = 7;
+const REAPPEAR_DAYS = 90;
 
 export function SupportBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Check if already dismissed
-    const isDismissed = localStorage.getItem(DISMISSED_KEY) === 'true';
-    if (isDismissed) {
-      return;
+    // Check if dismissed and if 90 days have passed
+    const dismissedAt = localStorage.getItem(DISMISSED_KEY);
+    if (dismissedAt) {
+      const dismissedDate = new Date(parseInt(dismissedAt, 10));
+      const now = new Date();
+      const daysSinceDismissed = (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysSinceDismissed < REAPPEAR_DAYS) {
+        return;
+      }
+      // 90 days passed - reset pageview counter for fresh start
+      localStorage.removeItem(DISMISSED_KEY);
+      localStorage.setItem(PAGEVIEW_KEY, '0');
     }
 
     // Increment pageview count
@@ -28,7 +39,7 @@ export function SupportBanner() {
   }, []);
 
   const handleDismiss = () => {
-    localStorage.setItem(DISMISSED_KEY, 'true');
+    localStorage.setItem(DISMISSED_KEY, Date.now().toString());
     setVisible(false);
   };
 
@@ -38,46 +49,67 @@ export function SupportBanner() {
 
   return (
     <Box
-      bg="yellow.5"
-      c="black"
       py="sm"
       px="md"
+      style={{
+        background: 'linear-gradient(135deg, #FCD34D 0%, #FBBF24 50%, #F59E0B 100%)',
+        borderBottom: '1px solid rgba(251, 191, 36, 0.6)',
+      }}
     >
       <Group justify="space-between" align="center" wrap="nowrap">
-        <Group gap="sm" align="flex-start" wrap="nowrap" style={{ flex: 1 }}>
+        <Group gap="sm" align="center" wrap="nowrap" style={{ flex: 1 }}>
           <IconStar
-            size={24}
-            fill="black"
-            color="black"
-            style={{ flexShrink: 0, marginTop: 2 }}
+            size={28}
+            fill="#000"
+            color="#000"
+            style={{ flexShrink: 0 }}
           />
           <Box>
-            <Title order={6} mb={4}>
+            <Title order={6} mb={4} c="black">
               Enjoying pd2.tools?
             </Title>
-            <Text size="sm">
+            <Text size="sm" c="black">
               If you wanted to show your support, starring the{' '}
               <Anchor
                 href="https://github.com/coleestrin/pd2-tools"
                 target="_blank"
                 rel="noopener noreferrer"
-                c="blue.8"
-                underline="always"
+                c="black"
                 fw={600}
+                underline="always"
               >
                 pd2.tools GitHub repository
               </Anchor>
-	      {' '}would really help us out!
+              {' '}would really help us out!
             </Text>
           </Box>
         </Group>
-        <CloseButton
-          onClick={handleDismiss}
-          aria-label="Dismiss banner"
-          variant="transparent"
-          c="black"
-          size="lg"
-        />
+        <Group gap="sm" wrap="nowrap">
+          <Button
+            component="a"
+            href="https://github.com/coleestrin/pd2-tools"
+            target="_blank"
+            rel="noopener noreferrer"
+            leftSection={<GitHubIcon />}
+            variant="white"
+            color="dark"
+            size="sm"
+            style={{
+              backgroundColor: '#fff',
+              color: '#24292f',
+              borderColor: '#d0d7de',
+            }}
+          >
+            Star on GitHub
+          </Button>
+          <CloseButton
+            onClick={handleDismiss}
+            aria-label="Dismiss banner"
+            variant="transparent"
+            c="black"
+            size="lg"
+          />
+        </Group>
       </Group>
     </Box>
   );
