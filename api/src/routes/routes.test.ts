@@ -8,10 +8,12 @@ import healthRoutes from "./health";
 import { characterDB, economyDB } from "../database";
 
 jest.mock("../utils/cache", () => ({
-  getCacheValue: jest.fn(() => undefined), // Default: no cache hit
-  setCacheValue: jest.fn(),
-  deleteCacheValue: jest.fn(),
-  clearCache: jest.fn(),
+  getCacheValue: jest.fn(() => Promise.resolve(undefined)), // Default: no cache hit
+  setCacheValue: jest.fn(() => Promise.resolve(true)),
+  deleteCacheValue: jest.fn(() => Promise.resolve(0)),
+  clearCache: jest.fn(() => Promise.resolve()),
+  initializeRedis: jest.fn(() => Promise.resolve()),
+  closeRedis: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock("../database", () => ({
