@@ -14,6 +14,8 @@ export const API_ENDPOINTS = {
   character: "/characters",
   itemUsage: "/characters/stats/item-usage",
   skillUsage: "/characters/stats/skill-usage",
+  mercTypeUsage: "/characters/stats/merc-type-usage",
+  mercItemUsage: "/characters/stats/merc-item-usage",
   levelDistribution: "/characters/stats/level-distribution",
 
   // Economy

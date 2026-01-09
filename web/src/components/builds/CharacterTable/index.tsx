@@ -87,6 +87,12 @@ export default function PlayerTable({
               JSON.stringify(filters.skillFilter)
             );
           }
+          if (filters.mercTypeFilter.length) {
+            queryParams.append("mercTypes", filters.mercTypeFilter.join(","));
+          }
+          if (filters.mercItemFilter.length) {
+            queryParams.append("mercItems", filters.mercItemFilter.join(","));
+          }
           if (filters.searchQuery) {
             // Assuming 'query' is the param name for search
             queryParams.append("query", filters.searchQuery);
@@ -106,6 +112,8 @@ export default function PlayerTable({
                 filters.skillFilter.length > 0
                   ? filters.skillFilter
                   : undefined,
+              requiredMercTypes: filters.mercTypeFilter,
+              requiredMercItems: filters.mercItemFilter,
               levelRange: { min: levelRange.min, max: levelRange.max },
               season: filters.season,
             },
@@ -303,6 +311,8 @@ export default function PlayerTable({
       if (filters.classFilter.length) searchParams.set("class", filters.classFilter.join(","));
       if (filters.itemFilter.length) searchParams.set("items", filters.itemFilter.join(","));
       if (filters.skillFilter.length) searchParams.set("skills", JSON.stringify(filters.skillFilter));
+      if (filters.mercTypeFilter.length) searchParams.set("mercTypes", filters.mercTypeFilter.join(","));
+      if (filters.mercItemFilter.length) searchParams.set("mercItems", filters.mercItemFilter.join(","));
       if (filters.searchQuery) searchParams.set("query", filters.searchQuery);
       if (filters.season !== 12) searchParams.set("season", filters.season.toString());
 

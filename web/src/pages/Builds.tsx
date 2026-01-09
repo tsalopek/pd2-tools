@@ -5,6 +5,8 @@ import ClassCard from "../components/builds/ClassCard";
 import UniqueCard from "../components/builds/UniqueCard";
 import ClassBar from "../components/builds/ClassBar";
 import SkillCard from "../components/builds/SkillCard";
+import MercTypeCard from "../components/builds/MercTypeCard";
+import MercItemCard from "../components/builds/MercItemCard";
 import { Helmet } from "react-helmet";
 import { useCharacterFilters, useCharacterData } from "../hooks";
 
@@ -76,6 +78,30 @@ export default function Builds() {
                   ) : (
                     <Skeleton height="300px" />
                   )}
+
+                  {isLoading ? (
+                    <Skeleton height="300px" />
+                  ) : data ? (
+                    <MercTypeCard
+                      data={data}
+                      filters={filters}
+                      updateFilters={updateFilters}
+                    />
+                  ) : (
+                    <Skeleton height="300px" />
+                  )}
+
+                  {isLoading ? (
+                    <Skeleton height="300px" />
+                  ) : data ? (
+                    <MercItemCard
+                      data={data}
+                      filters={filters}
+                      updateFilters={updateFilters}
+                    />
+                  ) : (
+                    <Skeleton height="300px" />
+                  )}
                 </SimpleGrid>
               </div>
 
@@ -125,6 +151,30 @@ export default function Builds() {
                     <Skeleton height="300px" />
                   ) : data ? (
                     <SkillCard
+                      data={data}
+                      filters={filters}
+                      updateFilters={updateFilters}
+                    />
+                  ) : (
+                    <Skeleton height="300px" />
+                  )}
+
+                  {isLoading ? (
+                    <Skeleton height="300px" />
+                  ) : data ? (
+                    <MercTypeCard
+                      data={data}
+                      filters={filters}
+                      updateFilters={updateFilters}
+                    />
+                  ) : (
+                    <Skeleton height="300px" />
+                  )}
+
+                  {isLoading ? (
+                    <Skeleton height="300px" />
+                  ) : data ? (
+                    <MercItemCard
                       data={data}
                       filters={filters}
                       updateFilters={updateFilters}

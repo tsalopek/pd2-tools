@@ -6,6 +6,7 @@ import type {
   CharacterListResponse,
   ItemUsageStats,
   SkillUsageStats,
+  MercTypeStats,
   LevelDistribution,
   CharacterCounts,
 } from "../types";
@@ -30,6 +31,8 @@ export const charactersAPI = {
         filter.requiredSkills && filter.requiredSkills.length > 0
           ? encodeURIComponent(JSON.stringify(filter.requiredSkills))
           : undefined,
+      mercTypes: filter.requiredMercTypes?.join(","),
+      mercItems: filter.requiredMercItems?.join(","),
       minLevel: filter.levelRange?.min,
       maxLevel: filter.levelRange?.max,
       season: filter.season,
@@ -68,6 +71,8 @@ export const charactersAPI = {
         filter.requiredSkills && filter.requiredSkills.length > 0
           ? encodeURIComponent(JSON.stringify(filter.requiredSkills))
           : undefined,
+      mercTypes: filter.requiredMercTypes?.join(","),
+      mercItems: filter.requiredMercItems?.join(","),
       minLevel: filter.levelRange?.min,
       maxLevel: filter.levelRange?.max,
       season: filter.season,
@@ -89,6 +94,54 @@ export const charactersAPI = {
         filter.requiredSkills && filter.requiredSkills.length > 0
           ? encodeURIComponent(JSON.stringify(filter.requiredSkills))
           : undefined,
+      mercTypes: filter.requiredMercTypes?.join(","),
+      mercItems: filter.requiredMercItems?.join(","),
+      minLevel: filter.levelRange?.min,
+      maxLevel: filter.levelRange?.max,
+      season: filter.season,
+    });
+  },
+
+  /**
+   * Get mercenary type usage statistics
+   */
+  async getMercTypeUsage(
+    gameMode: string = "softcore",
+    filter: CharacterFilter = {}
+  ): Promise<MercTypeStats[]> {
+    return apiClient.get<MercTypeStats[]>(API_ENDPOINTS.mercTypeUsage, {
+      gameMode,
+      classes: filter.requiredClasses?.join(","),
+      items: filter.requiredItems?.join(","),
+      skills:
+        filter.requiredSkills && filter.requiredSkills.length > 0
+          ? encodeURIComponent(JSON.stringify(filter.requiredSkills))
+          : undefined,
+      mercTypes: filter.requiredMercTypes?.join(","),
+      mercItems: filter.requiredMercItems?.join(","),
+      minLevel: filter.levelRange?.min,
+      maxLevel: filter.levelRange?.max,
+      season: filter.season,
+    });
+  },
+
+  /**
+   * Get mercenary item usage statistics
+   */
+  async getMercItemUsage(
+    gameMode: string = "softcore",
+    filter: CharacterFilter = {}
+  ): Promise<ItemUsageStats[]> {
+    return apiClient.get<ItemUsageStats[]>(API_ENDPOINTS.mercItemUsage, {
+      gameMode,
+      classes: filter.requiredClasses?.join(","),
+      items: filter.requiredItems?.join(","),
+      skills:
+        filter.requiredSkills && filter.requiredSkills.length > 0
+          ? encodeURIComponent(JSON.stringify(filter.requiredSkills))
+          : undefined,
+      mercTypes: filter.requiredMercTypes?.join(","),
+      mercItems: filter.requiredMercItems?.join(","),
       minLevel: filter.levelRange?.min,
       maxLevel: filter.levelRange?.max,
       season: filter.season,

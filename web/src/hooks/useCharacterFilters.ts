@@ -13,6 +13,8 @@ export interface CharacterFilters {
   classFilter: string[];
   itemFilter: string[];
   skillFilter: SkillRequirement[];
+  mercTypeFilter: string[];
+  mercItemFilter: string[];
   searchQuery: string;
   minLevel: number;
   maxLevel: number;
@@ -33,6 +35,10 @@ const updateUrlWithoutRerender = debounce((filters: CharacterFilters) => {
     params.set("items", filters.itemFilter.join(","));
   if (filters.skillFilter.length)
     params.set("skills", JSON.stringify(filters.skillFilter));
+  if (filters.mercTypeFilter.length)
+    params.set("mercTypes", filters.mercTypeFilter.join(","));
+  if (filters.mercItemFilter.length)
+    params.set("mercItems", filters.mercItemFilter.join(","));
   if (filters.searchQuery) params.set("query", filters.searchQuery);
   if (filters.season !== 12) params.set("season", filters.season.toString());
 
@@ -66,6 +72,10 @@ export function useCharacterFilters(): UseCharacterFiltersReturn {
         }
         return [];
       })(),
+      mercTypeFilter:
+        searchParams.get("mercTypes")?.split(",").filter(Boolean) || [],
+      mercItemFilter:
+        searchParams.get("mercItems")?.split(",").filter(Boolean) || [],
       searchQuery: searchParams.get("query") || "",
       minLevel: parseInt(
         searchParams.get("minLevel") || levelRange.min.toString()

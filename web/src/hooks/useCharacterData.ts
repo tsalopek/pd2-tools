@@ -5,12 +5,15 @@ import type {
   FullCharacterResponse,
   ItemUsageStats,
   SkillUsageStats,
+  MercTypeStats,
 } from "../types";
 
 export interface CharacterData {
   characters: FullCharacterResponse[];
   itemUsage: ItemUsageStats[];
   skillUsage: SkillUsageStats[];
+  mercTypeUsage: MercTypeStats[];
+  mercItemUsage: ItemUsageStats[];
   breakdown: Record<string, number>;
   total: number;
 }
@@ -38,12 +41,14 @@ export function useCharacterData(
       isLoading.current = true;
 
       try {
-        const [charactersData, itemsData, skillsData] = await Promise.all([
+        const [charactersData, itemsData, skillsData, mercTypesData, mercItemsData] = await Promise.all([
           charactersAPI.getCharacters(filters.gameMode, {
             requiredClasses: filters.classFilter,
             requiredItems: filters.itemFilter,
             requiredSkills:
               filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            requiredMercTypes: filters.mercTypeFilter,
+            requiredMercItems: filters.mercItemFilter,
             levelRange: { min: filters.minLevel, max: filters.maxLevel },
             season: filters.season,
           }, 1, 40),
@@ -53,6 +58,8 @@ export function useCharacterData(
             requiredItems: filters.itemFilter,
             requiredSkills:
               filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            requiredMercTypes: filters.mercTypeFilter,
+            requiredMercItems: filters.mercItemFilter,
             season: filters.season,
           }),
           charactersAPI.getSkillUsage(filters.gameMode, {
@@ -61,6 +68,28 @@ export function useCharacterData(
             requiredItems: filters.itemFilter,
             requiredSkills:
               filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            requiredMercTypes: filters.mercTypeFilter,
+            requiredMercItems: filters.mercItemFilter,
+            season: filters.season,
+          }),
+          charactersAPI.getMercTypeUsage(filters.gameMode, {
+            requiredClasses: filters.classFilter,
+            levelRange: { min: filters.minLevel, max: filters.maxLevel },
+            requiredItems: filters.itemFilter,
+            requiredSkills:
+              filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            requiredMercTypes: filters.mercTypeFilter,
+            requiredMercItems: filters.mercItemFilter,
+            season: filters.season,
+          }),
+          charactersAPI.getMercItemUsage(filters.gameMode, {
+            requiredClasses: filters.classFilter,
+            levelRange: { min: filters.minLevel, max: filters.maxLevel },
+            requiredItems: filters.itemFilter,
+            requiredSkills:
+              filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
+            requiredMercTypes: filters.mercTypeFilter,
+            requiredMercItems: filters.mercItemFilter,
             season: filters.season,
           }),
         ]);
@@ -70,6 +99,8 @@ export function useCharacterData(
             characters: charactersData.characters,
             itemUsage: itemsData,
             skillUsage: skillsData,
+            mercTypeUsage: mercTypesData,
+            mercItemUsage: mercItemsData,
             breakdown: charactersData.breakdown,
             total: charactersData.total,
           });
@@ -95,6 +126,8 @@ export function useCharacterData(
     filters.classFilter,
     filters.itemFilter,
     filters.skillFilter,
+    filters.mercTypeFilter,
+    filters.mercItemFilter,
     filters.minLevel,
     filters.maxLevel,
     filters.season,
