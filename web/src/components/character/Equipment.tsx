@@ -287,6 +287,9 @@ const EquipmentSlot = ({
           height,
           border: `0.5px solid ${getRarityBorderColor(item)}`,
           cursor: item ? "pointer" : "default",
+          background: item && getRarityColor(item)
+            ? `linear-gradient(to top, ${hexToRgba(getRarityColor(item), 0.15)} 0%, ${hexToRgba(getRarityColor(item), 0.08)} 35%, transparent 70%)`
+            : "transparent",
           ...style,
         }}
         onClick={handleClick}

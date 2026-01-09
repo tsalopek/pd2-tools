@@ -1,4 +1,4 @@
-import { ActionIcon, Card, Text, Tooltip, Divider } from "@mantine/core";
+import { ActionIcon, Card, Text, Tooltip } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import type { StatsSectionProps } from "../../types";
 

@@ -3,12 +3,13 @@ import { characterDB } from "../database";
 import { validateSeason } from "../middleware/validation";
 import { config, logger as mainLogger } from "../config";
 import CharacterStatParser from "../utils/character-stats";
+import { autoCache } from "../middleware/auto-cache";
 
 const logger = mainLogger.createNamedLogger("API");
 const router = Router();
 
 // GET /api/characters - Get filtered characters
-router.get("/", validateSeason, async (req: Request, res: Response) => {
+router.get("/", validateSeason, autoCache(900), async (req: Request, res: Response) => {
   try {
     const {
       gameMode = "softcore",
@@ -82,7 +83,7 @@ router.get("/", validateSeason, async (req: Request, res: Response) => {
 });
 
 // GET /api/characters/:name - Get character by name
-router.get("/:name", validateSeason, async (req: Request, res: Response) => {
+router.get("/:name", validateSeason, autoCache(900), async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
     const { gameMode = "softcore", season } = req.query;
@@ -150,6 +151,7 @@ router.get("/:name", validateSeason, async (req: Request, res: Response) => {
 router.get(
   "/stats/level-distribution",
   validateSeason,
+  autoCache(900),
   async (_req: Request, res: Response) => {
     try {
       const { season } = _req.query;
@@ -173,6 +175,7 @@ router.get(
 router.get(
   "/stats/item-usage",
   validateSeason,
+  autoCache(900),
   async (req: Request, res: Response) => {
     try {
       const {
@@ -250,6 +253,7 @@ router.get(
 router.get(
   "/stats/skill-usage",
   validateSeason,
+  autoCache(900),
   async (req: Request, res: Response) => {
     try {
       const {

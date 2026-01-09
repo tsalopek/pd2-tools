@@ -38,7 +38,9 @@ function getCachedHomeStats(): CachedHomeStats | null {
     if (cached) {
       return JSON.parse(cached);
     }
-  } catch {}
+  } catch {
+    // Ignore parse errors
+  }
   return null;
 }
 
@@ -48,7 +50,9 @@ function setCachedHomeStats(stats: HomeStats) {
       CACHE_KEY,
       JSON.stringify({ ...stats, timestamp: Date.now() })
     );
-  } catch {}
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 const tools = [

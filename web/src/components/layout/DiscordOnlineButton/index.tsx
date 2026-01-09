@@ -54,14 +54,18 @@ function getCachedOnline(): { value: number; timestamp: number } | null {
     if (cached) {
       return JSON.parse(cached);
     }
-  } catch {}
+  } catch {
+    // Ignore parse errors
+  }
   return null;
 }
 
 function setCachedOnline(value: number) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ value, timestamp: Date.now() }));
-  } catch {}
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 interface DiscordOnlineButtonProps {

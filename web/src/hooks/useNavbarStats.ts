@@ -17,7 +17,9 @@ function getCachedStats(): CachedNavbarStats | null {
     if (cached) {
       return JSON.parse(cached);
     }
-  } catch {}
+  } catch {
+    // Ignore parse errors
+  }
   return null;
 }
 
@@ -27,7 +29,9 @@ function setCachedStats(players: number | null, characters: number | null) {
       CACHE_KEY,
       JSON.stringify({ players, characters, timestamp: Date.now() })
     );
-  } catch {}
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 export function useNavbarStats() {

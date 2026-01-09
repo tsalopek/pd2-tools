@@ -18,6 +18,13 @@ export const config = {
     password: process.env.POSTGRES_PASSWORD || "",
   },
 
+  // Redis configuration
+  redis: {
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    password: process.env.REDIS_PASSWORD || undefined,
+  },
+
   // External services
   //pd2ApiJwt: process.env.PD2_API_JWT || "", (for leaderboard/economy)
   //googleAiApiKey: process.env.GOOGLE_AI_API_KEY || "", (economy)

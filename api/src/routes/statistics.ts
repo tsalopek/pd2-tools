@@ -1,13 +1,13 @@
 import { Router, Request, Response } from "express";
 import { characterDB } from "../database";
 import { logger as mainLogger } from "../config";
-import { getCacheValue, setCacheValue } from "../utils/cache";
+import { autoCache } from "../middleware/auto-cache";
 
 const logger = mainLogger.createNamedLogger("API");
 const router = Router();
 
 // GET /api/statistics/online-players - Get online players history
-router.get("/online-players", async (_req: Request, res: Response) => {
+router.get("/online-players", autoCache(900), async (_req: Request, res: Response) => {
   try {
     const history = await characterDB.getOnlinePlayersHistory();
     res.json(history);
@@ -22,22 +22,10 @@ router.get("/online-players", async (_req: Request, res: Response) => {
 });
 
 // GET /api/statistics/online-players-last - Get latest online player count
-router.get("/online-players-last", async (_req: Request, res: Response) => {
+router.get("/online-players-last", autoCache(900), async (_req: Request, res: Response) => {
   try {
-    const cacheKey = "stats:online-players-last";
-
-    // Check cache first
-    const cached = getCacheValue(cacheKey);
-    if (cached) {
-      res.json(cached);
-      return;
-    }
-
     // Fetch from database
     const latest = await characterDB.getOnlinePlayersLast();
-
-    // Store in cache
-    setCacheValue(cacheKey, latest);
 
     res.json(latest);
   } catch (error: unknown) {
@@ -51,22 +39,10 @@ router.get("/online-players-last", async (_req: Request, res: Response) => {
 });
 
 // GET /api/statistics/character-counts - Get character counts by game mode
-router.get("/character-counts", async (_req: Request, res: Response) => {
+router.get("/character-counts", autoCache(900), async (_req: Request, res: Response) => {
   try {
-    const cacheKey = "stats:character-counts";
-
-    // Check cache first
-    const cached = getCacheValue(cacheKey);
-    if (cached) {
-      res.json(cached);
-      return;
-    }
-
     // Fetch from database
     const counts = await characterDB.getCharacterCounts();
-
-    // Store in cache
-    setCacheValue(cacheKey, counts);
 
     res.json(counts);
   } catch (error: unknown) {

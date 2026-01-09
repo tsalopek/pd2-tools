@@ -2,27 +2,19 @@ import { Router, Request, Response } from "express";
 import { economyDB } from "../database";
 import { validateSeason } from "../middleware/validation";
 import { config, logger as mainLogger } from "../config";
-import { getCacheValue, setCacheValue } from "../utils/cache";
+import { autoCache } from "../middleware/auto-cache";
 
 const logger = mainLogger.createNamedLogger("API");
 const router = Router();
 
 // GET /api/economy/items - Get items with aggregated price data
-router.get("/items", validateSeason, async (req: Request, res: Response) => {
+router.get("/items", validateSeason, autoCache(900), async (req: Request, res: Response) => {
   try {
     const { season, days } = req.query;
     const seasonNumber = season
       ? parseInt(season as string, 10)
       : config.currentSeason;
     const daysOfHistory = days ? parseInt(days as string, 10) : 7;
-    const cacheKey = `economy:items:${seasonNumber}:${daysOfHistory}`;
-
-    // Check cache first
-    const cached = getCacheValue(cacheKey);
-    if (cached) {
-      res.json(cached);
-      return;
-    }
 
     // Fetch aggregated data from database
     const items = await economyDB.getItemsSummary(seasonNumber, daysOfHistory);
@@ -35,9 +27,6 @@ router.get("/items", validateSeason, async (req: Request, res: Response) => {
       totalListings,
       lastUpdated: new Date().toISOString(),
     };
-
-    // Store in cache
-    setCacheValue(cacheKey, response);
 
     res.json(response);
   } catch (error: unknown) {
@@ -54,6 +43,7 @@ router.get("/items", validateSeason, async (req: Request, res: Response) => {
 router.get(
   "/listings/:itemName",
   validateSeason,
+  autoCache(900),
   async (req: Request, res: Response) => {
     try {
       const { itemName } = req.params;
@@ -101,20 +91,13 @@ router.get(
 router.get(
   "/items/:itemName",
   validateSeason,
+  autoCache(900),
   async (req: Request, res: Response) => {
     try {
       const { itemName } = req.params;
       const { season, limit } = req.query;
       const seasonNumber = season ? parseInt(season as string, 10) : undefined;
       const listingLimit = limit ? parseInt(limit as string, 10) : 100;
-      const cacheKey = `economy:item:${itemName}:${seasonNumber}:${listingLimit}`;
-
-      // Check cache first
-      const cached = getCacheValue(cacheKey);
-      if (cached) {
-        res.json(cached);
-        return;
-      }
 
       // Fetch from database
       const data = await economyDB.getItemDetail(
@@ -122,9 +105,6 @@ router.get(
         seasonNumber,
         listingLimit
       );
-
-      // Store in cache
-      setCacheValue(cacheKey, data);
 
       res.json(data);
     } catch (error: unknown) {
@@ -142,27 +122,17 @@ router.get(
 router.get(
   "/listings-count",
   validateSeason,
+  autoCache(900),
   async (req: Request, res: Response) => {
     try {
       const { season } = req.query;
       const seasonNumber = season
         ? parseInt(season as string, 10)
         : config.currentSeason;
-      const cacheKey = `economy:listings-count:${seasonNumber}`;
-
-      // Check cache first
-      const cached = getCacheValue(cacheKey);
-      if (cached) {
-        res.json(cached);
-        return;
-      }
 
       // Fetch from database
       const total = await economyDB.getTotalListingsCount(seasonNumber);
       const response = { total };
-
-      // Store in cache
-      setCacheValue(cacheKey, response);
 
       res.json(response);
     } catch (error: unknown) {
