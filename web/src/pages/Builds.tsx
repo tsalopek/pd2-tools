@@ -81,7 +81,7 @@ export default function Builds() {
 
               <div>
                 {isLoading ? (
-                  <Skeleton height="915px" />
+                  <Skeleton height="1800px" />
                 ) : data ? (
                   <PlayerTable
                     filters={filters}
@@ -145,7 +145,7 @@ export default function Builds() {
                 }}
               >
                 {isLoading ? (
-                  <Skeleton height="915px" />
+                  <Skeleton height="1800px" />
                 ) : data ? (
                   <PlayerTable
                     filters={filters}

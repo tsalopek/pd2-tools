@@ -16,6 +16,8 @@ export interface CharacterHeaderProps {
   level: number;
   lastUpdated?: string;
   isMobile: boolean;
+  prevCharacter?: string | null;
+  nextCharacter?: string | null;
 }
 
 export interface EquipmentSectionProps {

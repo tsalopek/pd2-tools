@@ -46,7 +46,7 @@ export function useCharacterData(
               filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
             levelRange: { min: filters.minLevel, max: filters.maxLevel },
             season: filters.season,
-          }),
+          }, 1, 40),
           charactersAPI.getItemUsage(filters.gameMode, {
             requiredClasses: filters.classFilter,
             levelRange: { min: filters.minLevel, max: filters.maxLevel },
