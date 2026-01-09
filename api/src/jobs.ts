@@ -7,7 +7,7 @@ const logger = mainLogger.createNamedLogger("Jobs");
 
 //Start background jobs
 startCharacterScraper().catch((error) => {
-	logger.error("Failed to start character scraper:", error);
+  logger.error("Failed to start character scraper:", error);
 });
 
 startOnlinePlayersTracker().catch((error) => {

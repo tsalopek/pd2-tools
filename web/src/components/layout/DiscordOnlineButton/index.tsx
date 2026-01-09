@@ -62,7 +62,10 @@ function getCachedOnline(): { value: number; timestamp: number } | null {
 
 function setCachedOnline(value: number) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ value, timestamp: Date.now() }));
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ value, timestamp: Date.now() })
+    );
   } catch {
     // Ignore storage errors
   }
@@ -75,9 +78,16 @@ interface DiscordOnlineButtonProps {
   onClick?: () => void;
 }
 
-export function DiscordOnlineButton({ guildId, inviteLink, mobile = false, onClick }: DiscordOnlineButtonProps) {
+export function DiscordOnlineButton({
+  guildId,
+  inviteLink,
+  mobile = false,
+  onClick,
+}: DiscordOnlineButtonProps) {
   const cached = getCachedOnline();
-  const [onlineCount, setOnlineCount] = useState<number | null>(cached?.value ?? null);
+  const [onlineCount, setOnlineCount] = useState<number | null>(
+    cached?.value ?? null
+  );
 
   useEffect(() => {
     const cached = getCachedOnline();
@@ -101,7 +111,8 @@ export function DiscordOnlineButton({ guildId, inviteLink, mobile = false, onCli
       .catch(console.error);
   }, [guildId]);
 
-  const displayValue = onlineCount !== null ? onlineCount.toLocaleString() : "—";
+  const displayValue =
+    onlineCount !== null ? onlineCount.toLocaleString() : "—";
 
   const tooltipLabel = (
     <Group gap={6} wrap="nowrap">
@@ -121,7 +132,9 @@ export function DiscordOnlineButton({ guildId, inviteLink, mobile = false, onCli
         leftSection={<DiscordIcon size={18} />}
         rightSection={
           <Group gap={4} wrap="nowrap">
-            <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+            <span
+              style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}
+            >
               {displayValue}
             </span>
             <OnlineDot animated />

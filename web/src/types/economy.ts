@@ -61,4 +61,3 @@ export interface ListingsCountResponse {
   total: number;
   bySeason: Record<string, number>;
 }
-

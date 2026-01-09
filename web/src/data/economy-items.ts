@@ -128,7 +128,7 @@ export const ECONOMY_ITEMS_DATA: EconomyItemsMap = {
     iconUrl: "/economy_icons/Zod_Rune.png",
     wikiLink: "https://wiki.projectdiablo2.com/wiki/Runes",
   },
-    "cham-rune": {
+  "cham-rune": {
     itemNameInternal: "Cham Rune",
     displayName: "Cham Rune",
     category: "Runes",
@@ -137,7 +137,7 @@ export const ECONOMY_ITEMS_DATA: EconomyItemsMap = {
     iconUrl: "/economy_icons/Cham_Rune.png",
     wikiLink: "https://wiki.projectdiablo2.com/wiki/Runes",
   },
-    "jah-rune": {
+  "jah-rune": {
     itemNameInternal: "Jah Rune",
     displayName: "Jah Rune",
     category: "Runes",
@@ -173,7 +173,7 @@ export const ECONOMY_ITEMS_DATA: EconomyItemsMap = {
     iconUrl: "/economy_icons/Lo_Rune.png",
     wikiLink: "https://wiki.projectdiablo2.com/wiki/Runes",
   },
-    "ohm-rune": {
+  "ohm-rune": {
     itemNameInternal: "Ohm Rune",
     displayName: "Ohm Rune",
     category: "Runes",
@@ -363,4 +363,3 @@ export const ECONOMY_ITEMS_DATA: EconomyItemsMap = {
     wikiLink: "",
   },
 };
-

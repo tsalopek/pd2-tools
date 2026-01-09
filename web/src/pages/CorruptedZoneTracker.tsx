@@ -263,7 +263,7 @@ export default function CorruptedZoneTracker() {
             paddingRight: 24,
           }}
         >
-	  <Card
+          <Card
             shadow="sm"
             padding="md"
             radius="md"
@@ -282,8 +282,8 @@ export default function CorruptedZoneTracker() {
                 <Anchor
                   href="https://discord.com/invite/TVTExqWRhK"
                   target="_blank"
-		  c="white"
-                  rel="noopener noreferrer" 
+                  c="white"
+                  rel="noopener noreferrer"
                   style={{ fontWeight: 600, textDecoration: "underline" }}
                 >
                   Join our Discord

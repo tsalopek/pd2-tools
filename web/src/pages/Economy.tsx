@@ -77,7 +77,10 @@ export default function Economy() {
 
   // Create reverse lookup map from itemNameInternal to item data
   const itemDataByInternalName = useMemo(() => {
-    const map: Record<string, typeof ECONOMY_ITEMS_DATA[string] & { order: number }> = {};
+    const map: Record<
+      string,
+      (typeof ECONOMY_ITEMS_DATA)[string] & { order: number }
+    > = {};
     Object.values(ECONOMY_ITEMS_DATA).forEach((itemData, index) => {
       map[itemData.itemNameInternal] = { ...itemData, order: index };
     });
@@ -215,4 +218,3 @@ export default function Economy() {
     </>
   );
 }
-

@@ -103,12 +103,16 @@ const tools = [
 
 export default function Home() {
   const cached = getCachedHomeStats();
-  const [stats, setStats] = useState<HomeStats | null>(cached ? {
-    totalCharacters: cached.totalCharacters,
-    totalExports: cached.totalExports,
-    totalEconomyItems: cached.totalEconomyItems,
-    totalListings: cached.totalListings,
-  } : null);
+  const [stats, setStats] = useState<HomeStats | null>(
+    cached
+      ? {
+          totalCharacters: cached.totalCharacters,
+          totalExports: cached.totalExports,
+          totalEconomyItems: cached.totalEconomyItems,
+          totalListings: cached.totalListings,
+        }
+      : null
+  );
   const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
@@ -446,4 +450,3 @@ export default function Home() {
     </>
   );
 }
-

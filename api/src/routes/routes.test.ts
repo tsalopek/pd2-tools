@@ -454,8 +454,8 @@ describe("API Routes", () => {
   });
 
   describe("Economy Routes", () => {
-  // TODO: Update economy route tests for new economy setup
-  /* describe("GET /api/v1/economy/items", () => {
+    // TODO: Update economy route tests for new economy setup
+    /* describe("GET /api/v1/economy/items", () => {
       it("should return unique item names", async () => {
         const mockItems = ["Shako", "Griffons", "Enigma"];
 

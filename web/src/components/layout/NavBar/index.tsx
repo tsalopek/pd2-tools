@@ -228,7 +228,7 @@ export function HeaderSearch() {
 
   return (
     <>
-     <SupportBanner />
+      <SupportBanner />
       <Box
         visibleFrom="md"
         style={{
@@ -360,7 +360,7 @@ export function HeaderSearch() {
               {items}
             </Group>
 
-           <Group gap="xs">
+            <Group gap="xs">
               <Group gap="xs" visibleFrom="sm">
                 <GitHubStarsButton username="coleestrin" repo="pd2-tools" />
                 <DiscordOnlineButton

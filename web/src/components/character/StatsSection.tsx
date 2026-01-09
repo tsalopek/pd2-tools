@@ -43,16 +43,13 @@ function StatRow({
         borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
       }}
     >
-      <Text size="sm">
-        {label}
-      </Text>
+      <Text size="sm">{label}</Text>
       <Text size="sm" fw={500}>
         <span style={{ color: color }}>{value}</span>
         {secondValue !== undefined && (
           <>
             {" "}
-            {separator}{" "}
-            <span style={{ color: color }}>{secondValue}</span>
+            {separator} <span style={{ color: color }}>{secondValue}</span>
           </>
         )}
       </Text>
@@ -101,7 +98,13 @@ export function StatsSection({
           marginBottom: "12px",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Text fw={500}>Stats</Text>
           <Tooltip
             multiline
@@ -131,7 +134,10 @@ export function StatsSection({
         </StatGroup>
 
         {/* Attributes */}
-        <StatGroup tooltip="Base Attribute / Actual Attribute (with gear)" title="Attributes">
+        <StatGroup
+          tooltip="Base Attribute / Actual Attribute (with gear)"
+          title="Attributes"
+        >
           <StatRow
             label="Strength"
             value={attributes.strength}
@@ -219,7 +225,11 @@ export function StatsSection({
           <StatRow label="Increased Attack Speed" value={`${realStats.ias}%`} />
           <StatRow label="Magic Find" value={`${realStats.mf}%`} />
           <StatRow label="Gold Find" value={`${realStats.gf}%`} />
-          <StatRow label="Physical Damage Reduction" value={`${realStats.pdr}%`} isLast />
+          <StatRow
+            label="Physical Damage Reduction"
+            value={`${realStats.pdr}%`}
+            isLast
+          />
         </StatGroup>
       </div>
     </Card>

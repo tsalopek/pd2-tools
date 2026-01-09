@@ -112,8 +112,8 @@ export default function CharacterExport() {
         err.message.includes("HTTP error")
           ? "Character not found or server error"
           : err.message.includes("Invalid Base64")
-          ? "Invalid file data received"
-          : "An unexpected error occurred"
+            ? "Invalid file data received"
+            : "An unexpected error occurred"
       );
     },
     onSuccess: (base64Data) => handleDownload(base64Data),

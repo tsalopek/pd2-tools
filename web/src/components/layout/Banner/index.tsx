@@ -1,10 +1,18 @@
-import { useEffect, useState } from 'react';
-import { Box, Group, Text, CloseButton, Button, Title, Anchor } from '@mantine/core';
-import { IconStar } from '@tabler/icons-react';
-import { GitHubIcon } from '../../icons';
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Group,
+  Text,
+  CloseButton,
+  Button,
+  Title,
+  Anchor,
+} from "@mantine/core";
+import { IconStar } from "@tabler/icons-react";
+import { GitHubIcon } from "../../icons";
 
-const PAGEVIEW_KEY = 'pd2tools_pageviews_s12';
-const DISMISSED_KEY = 'pd2tools_banner_dismissed_at_s12';
+const PAGEVIEW_KEY = "pd2tools_pageviews_s12";
+const DISMISSED_KEY = "pd2tools_banner_dismissed_at_s12";
 const PAGEVIEW_THRESHOLD = 7;
 const REAPPEAR_DAYS = 90;
 
@@ -17,18 +25,22 @@ export function SupportBanner() {
     if (dismissedAt) {
       const dismissedDate = new Date(parseInt(dismissedAt, 10));
       const now = new Date();
-      const daysSinceDismissed = (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+      const daysSinceDismissed =
+        (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
 
       if (daysSinceDismissed < REAPPEAR_DAYS) {
         return;
       }
       // 90 days passed - reset pageview counter for fresh start
       localStorage.removeItem(DISMISSED_KEY);
-      localStorage.setItem(PAGEVIEW_KEY, '0');
+      localStorage.setItem(PAGEVIEW_KEY, "0");
     }
 
     // Increment pageview count
-    const currentViews = parseInt(localStorage.getItem(PAGEVIEW_KEY) || '0', 10);
+    const currentViews = parseInt(
+      localStorage.getItem(PAGEVIEW_KEY) || "0",
+      10
+    );
     const newViews = currentViews + 1;
     localStorage.setItem(PAGEVIEW_KEY, newViews.toString());
 
@@ -52,8 +64,9 @@ export function SupportBanner() {
       py="sm"
       px="md"
       style={{
-        background: 'linear-gradient(135deg, #FCD34D 0%, #FBBF24 50%, #F59E0B 100%)',
-        borderBottom: '1px solid rgba(251, 191, 36, 0.6)',
+        background:
+          "linear-gradient(135deg, #FCD34D 0%, #FBBF24 50%, #F59E0B 100%)",
+        borderBottom: "1px solid rgba(251, 191, 36, 0.6)",
       }}
     >
       <Group justify="space-between" align="center" wrap="nowrap">
@@ -69,7 +82,7 @@ export function SupportBanner() {
               Enjoying pd2.tools?
             </Title>
             <Text size="sm" c="black">
-              If you wanted to show your support, starring the{' '}
+              If you wanted to show your support, starring the{" "}
               <Anchor
                 href="https://github.com/coleestrin/pd2-tools"
                 target="_blank"
@@ -79,8 +92,8 @@ export function SupportBanner() {
                 underline="always"
               >
                 pd2.tools GitHub repository
-              </Anchor>
-              {' '}would really help us out!
+              </Anchor>{" "}
+              would really help us out!
             </Text>
           </Box>
         </Group>
@@ -95,9 +108,9 @@ export function SupportBanner() {
             color="dark"
             size="sm"
             style={{
-              backgroundColor: '#fff',
-              color: '#24292f',
-              borderColor: '#d0d7de',
+              backgroundColor: "#fff",
+              color: "#24292f",
+              borderColor: "#d0d7de",
             }}
           >
             Star on GitHub

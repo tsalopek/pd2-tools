@@ -448,7 +448,10 @@ export class EconomyDB {
     return parseInt(rows[0].count, 10);
   }
 
-  public async getItemsSummary(season?: number, daysOfHistory: number = 7): Promise<any[]> {
+  public async getItemsSummary(
+    season?: number,
+    daysOfHistory: number = 7
+  ): Promise<any[]> {
     let query: string;
     let params: unknown[] = [];
 
@@ -551,7 +554,11 @@ export class EconomyDB {
     }));
   }
 
-  public async getItemDetail(itemName: string, season?: number, limit: number = 100): Promise<any> {
+  public async getItemDetail(
+    itemName: string,
+    season?: number,
+    limit: number = 100
+  ): Promise<any> {
     let query: string;
     let params: unknown[];
 
@@ -608,7 +615,10 @@ export class EconomyDB {
       chartParams = [itemName];
     }
 
-    const { rows: dataByIngestionDate } = await this.pool.query(chartQuery, chartParams);
+    const { rows: dataByIngestionDate } = await this.pool.query(
+      chartQuery,
+      chartParams
+    );
 
     return {
       allListings: allListings.map((row) => ({
@@ -661,4 +671,3 @@ export class EconomyDB {
     await this.pool.end();
   }
 }
-

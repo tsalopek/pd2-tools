@@ -8,36 +8,44 @@ const logger = mainLogger.createNamedLogger("API");
 const router = Router();
 
 // GET /api/economy/items - Get items with aggregated price data
-router.get("/items", validateSeason, autoCache(900), async (req: Request, res: Response) => {
-  try {
-    const { season, days } = req.query;
-    const seasonNumber = season
-      ? parseInt(season as string, 10)
-      : config.currentSeason;
-    const daysOfHistory = days ? parseInt(days as string, 10) : 7;
+router.get(
+  "/items",
+  validateSeason,
+  autoCache(900),
+  async (req: Request, res: Response) => {
+    try {
+      const { season, days } = req.query;
+      const seasonNumber = season
+        ? parseInt(season as string, 10)
+        : config.currentSeason;
+      const daysOfHistory = days ? parseInt(days as string, 10) : 7;
 
-    // Fetch aggregated data from database
-    const items = await economyDB.getItemsSummary(seasonNumber, daysOfHistory);
+      // Fetch aggregated data from database
+      const items = await economyDB.getItemsSummary(
+        seasonNumber,
+        daysOfHistory
+      );
 
-    // Get total count for additional context
-    const totalListings = await economyDB.getTotalListingsCount(seasonNumber);
+      // Get total count for additional context
+      const totalListings = await economyDB.getTotalListingsCount(seasonNumber);
 
-    const response = {
-      items,
-      totalListings,
-      lastUpdated: new Date().toISOString(),
-    };
+      const response = {
+        items,
+        totalListings,
+        lastUpdated: new Date().toISOString(),
+      };
 
-    res.json(response);
-  } catch (error: unknown) {
-    logger.error("Error fetching item data", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    res.status(500).json({
-      error: { message: "Failed to fetch item data" },
-    });
+      res.json(response);
+    } catch (error: unknown) {
+      logger.error("Error fetching item data", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({
+        error: { message: "Failed to fetch item data" },
+      });
+    }
   }
-});
+);
 
 // GET /api/economy/listings/:itemName - Get listings for an item
 router.get(
@@ -147,4 +155,3 @@ router.get(
 );
 
 export default router;
-
