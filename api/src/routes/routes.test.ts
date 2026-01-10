@@ -23,6 +23,8 @@ jest.mock("../database", () => ({
     getLevelDistributions: jest.fn(),
     analyzeItemUsage: jest.fn(),
     analyzeSkillUsage: jest.fn(),
+    analyzeMercTypeUsage: jest.fn(),
+    analyzeMercItemUsage: jest.fn(),
     getOnlinePlayersHistory: jest.fn(),
   },
   economyDB: {
@@ -172,6 +174,50 @@ describe("API Routes", () => {
         expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
           "softcore",
           expect.objectContaining({ season: 11 }),
+          1,
+          50
+        );
+      });
+
+      it("should filter by mercenary types", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue({
+          total: 15,
+          characters: [],
+          breakdown: {},
+        });
+
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ mercTypes: "Offensive Auras,Cold Spells" })
+          .expect(200);
+
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({
+            requiredMercTypes: ["Offensive Auras", "Cold Spells"],
+          }),
+          1,
+          50
+        );
+      });
+
+      it("should filter by mercenary items", async () => {
+        (characterDB.getFilteredCharacters as jest.Mock).mockResolvedValue({
+          total: 8,
+          characters: [],
+          breakdown: {},
+        });
+
+        await request(app)
+          .get("/api/v1/characters")
+          .query({ mercItems: "Colossus Voulge,Vampire Gaze" })
+          .expect(200);
+
+        expect(characterDB.getFilteredCharacters).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({
+            requiredMercItems: ["Colossus Voulge", "Vampire Gaze"],
+          }),
           1,
           50
         );
@@ -448,6 +494,152 @@ describe("API Routes", () => {
 
         expect(response.body).toEqual({
           error: { message: "Failed to analyze skill usage" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/characters/stats/merc-type-usage", () => {
+      it("should return mercenary type usage statistics", async () => {
+        const mockUsage = [
+          {
+            mercType: "Offensive Auras",
+            numOccurrences: 50,
+            totalSample: 100,
+            pct: 50,
+          },
+          {
+            mercType: "Cold Spells",
+            numOccurrences: 30,
+            totalSample: 100,
+            pct: 30,
+          },
+        ];
+
+        (characterDB.analyzeMercTypeUsage as jest.Mock).mockResolvedValue(
+          mockUsage
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/merc-type-usage")
+          .expect(200);
+
+        expect(response.body).toEqual(mockUsage);
+        expect(characterDB.analyzeMercTypeUsage).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({ season: 12 })
+        );
+      });
+
+      it("should apply filters including other merc filters", async () => {
+        (characterDB.analyzeMercTypeUsage as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/stats/merc-type-usage")
+          .query({
+            gameMode: "hardcore",
+            minLevel: 90,
+            classes: "Sorceress",
+            mercItems: "Colossus Voulge",
+            season: 11,
+          })
+          .expect(200);
+
+        expect(characterDB.analyzeMercTypeUsage).toHaveBeenCalledWith(
+          "hardcore",
+          {
+            levelRange: { min: 90 },
+            requiredClasses: ["Sorceress"],
+            requiredMercItems: ["Colossus Voulge"],
+            season: 11,
+          }
+        );
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.analyzeMercTypeUsage as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/merc-type-usage")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to analyze mercenary type usage" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/characters/stats/merc-item-usage", () => {
+      it("should return mercenary item usage statistics", async () => {
+        const mockUsage = [
+          {
+            item: "Colossus Voulge",
+            itemType: "Runeword",
+            numOccurrences: 40,
+            totalSample: 100,
+            pct: 40,
+          },
+          {
+            item: "Vampire Gaze",
+            itemType: "Unique",
+            numOccurrences: 25,
+            totalSample: 100,
+            pct: 25,
+          },
+        ];
+
+        (characterDB.analyzeMercItemUsage as jest.Mock).mockResolvedValue(
+          mockUsage
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/merc-item-usage")
+          .expect(200);
+
+        expect(response.body).toEqual(mockUsage);
+        expect(characterDB.analyzeMercItemUsage).toHaveBeenCalledWith(
+          "softcore",
+          expect.objectContaining({ season: 12 })
+        );
+      });
+
+      it("should apply filters including merc type filter", async () => {
+        (characterDB.analyzeMercItemUsage as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/stats/merc-item-usage")
+          .query({
+            gameMode: "softcore",
+            classes: "Paladin,Sorceress",
+            mercTypes: "Offensive Auras",
+            items: "Harlequin Crest",
+            season: 12,
+          })
+          .expect(200);
+
+        expect(characterDB.analyzeMercItemUsage).toHaveBeenCalledWith(
+          "softcore",
+          {
+            requiredClasses: ["Paladin", "Sorceress"],
+            requiredMercTypes: ["Offensive Auras"],
+            requiredItems: ["Harlequin Crest"],
+            season: 12,
+          }
+        );
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.analyzeMercItemUsage as jest.Mock).mockRejectedValue(
+          new Error("Error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/stats/merc-item-usage")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to analyze mercenary item usage" },
         });
       });
     });

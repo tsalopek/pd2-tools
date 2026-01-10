@@ -575,4 +575,651 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
       expect(hcChars.total).toBe(1);
     });
   });
+
+  describe("Mercenary Functionality", () => {
+    describe("Mercenary Ingestion", () => {
+      it("should ingest character with mercenary type and items", async () => {
+        const charWithMerc = {
+          character: {
+            name: "TestMerc1",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 1, name: "Sorceress" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
+              {
+                name: "Sacred Armor",
+                quality: { name: "Unique" },
+                runeword: false,
+              },
+            ],
+          },
+        };
+
+        await db.ingestCharacter(charWithMerc, gameModeSC, season11);
+        const char = await db.getCharacterByName(
+          gameModeSC,
+          "TestMerc1",
+          season11
+        );
+
+        expect(char).not.toBeNull();
+        expect(char?.mercenary?.description).toBe("Offensive Auras");
+        expect(char?.mercenary?.items?.length).toBe(2);
+      });
+
+      it("should ingest character without mercenary", async () => {
+        const charNoMerc = {
+          character: {
+            name: "TestNoMerc",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 4, name: "Paladin" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+        };
+
+        await db.ingestCharacter(charNoMerc, gameModeSC, season11);
+        const char = await db.getCharacterByName(
+          gameModeSC,
+          "TestNoMerc",
+          season11
+        );
+
+        expect(char).not.toBeNull();
+        expect(char?.mercenary).toBeUndefined();
+      });
+
+      it("should ingest character with mercenary type but no items", async () => {
+        const charMercNoItems = {
+          character: {
+            name: "TestMercNoItems",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 0, name: "Amazon" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Cold Spells",
+            items: [],
+          },
+        };
+
+        await db.ingestCharacter(charMercNoItems, gameModeSC, season11);
+        const char = await db.getCharacterByName(
+          gameModeSC,
+          "TestMercNoItems",
+          season11
+        );
+
+        expect(char?.mercenary?.description).toBe("Cold Spells");
+        expect(char?.mercenary?.items?.length).toBe(0);
+      });
+
+      it("should handle invalid mercenary item data gracefully", async () => {
+        const charInvalidMercItems = {
+          character: {
+            name: "TestInvalidMerc",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 2, name: "Necromancer" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Fire Spells",
+            items: [
+              {
+                name: "Voulge",
+                quality: { name: "Unique" },
+              },
+              {
+                // Missing name - should be skipped
+                quality: { name: "Runeword" },
+              },
+              {
+                name: "Great Hauberk",
+                // Missing quality - should be skipped
+              },
+            ],
+          },
+        };
+
+        await db.ingestCharacter(charInvalidMercItems, gameModeSC, season11);
+        const char = await db.getCharacterByName(
+          gameModeSC,
+          "TestInvalidMerc",
+          season11
+        );
+
+        // Should only have the valid item
+        expect(char?.mercenary?.items?.length).toBe(1);
+      });
+    });
+
+    describe("Mercenary Type Filtering (OR Logic)", () => {
+      beforeEach(async () => {
+        const char1 = {
+          character: {
+            name: "TestOffAuras1",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 4, name: "Paladin" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: { description: "Offensive Auras", items: [] },
+        };
+
+        const char2 = {
+          character: {
+            name: "TestColdSpells1",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 1, name: "Sorceress" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: { description: "Cold Spells", items: [] },
+        };
+
+        const char3 = {
+          character: {
+            name: "TestOffAuras2",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 3, name: "Barbarian" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: { description: "Offensive Auras", items: [] },
+        };
+
+        await Promise.all([
+          db.ingestCharacter(char1, gameModeSC, season11),
+          db.ingestCharacter(char2, gameModeSC, season11),
+          db.ingestCharacter(char3, gameModeSC, season11),
+        ]);
+      });
+
+      it("should filter by single mercenary type", async () => {
+        const filter: CharacterFilter = {
+          requiredMercTypes: ["Offensive Auras"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        const names = results.characters.map((c) => c.character!.name).sort();
+
+        expect(names).toContain("TestOffAuras1");
+        expect(names).toContain("TestOffAuras2");
+        expect(names).not.toContain("TestColdSpells1");
+      });
+
+      it("should filter by multiple mercenary types (OR logic)", async () => {
+        const filter: CharacterFilter = {
+          requiredMercTypes: ["Offensive Auras", "Cold Spells"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        const names = results.characters.map((c) => c.character!.name).sort();
+
+        expect(names).toContain("TestOffAuras1");
+        expect(names).toContain("TestOffAuras2");
+        expect(names).toContain("TestColdSpells1");
+        expect(results.total).toBe(3);
+      });
+
+      it("should return no results for non-existent mercenary type", async () => {
+        const filter: CharacterFilter = {
+          requiredMercTypes: ["NonexistentMercType"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        expect(results.characters.length).toBe(0);
+      });
+    });
+
+    describe("Mercenary Item Filtering (AND Logic)", () => {
+      beforeEach(async () => {
+        const char1 = {
+          character: {
+            name: "TestInfinity",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 1, name: "Sorceress" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+            ],
+          },
+        };
+
+        const char2 = {
+          character: {
+            name: "TestInfinityFort",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 4, name: "Paladin" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Sacred Armor", quality: { name: "Runeword" } },
+            ],
+          },
+        };
+
+        const char3 = {
+          character: {
+            name: "TestFortOnly",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 3, name: "Barbarian" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [{ name: "Sacred Armor", quality: { name: "Runeword" } }],
+          },
+        };
+
+        await Promise.all([
+          db.ingestCharacter(char1, gameModeSC, season11),
+          db.ingestCharacter(char2, gameModeSC, season11),
+          db.ingestCharacter(char3, gameModeSC, season11),
+        ]);
+      });
+
+      it("should filter by single mercenary item", async () => {
+        const filter: CharacterFilter = {
+          requiredMercItems: ["Colossus Voulge"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        const names = results.characters.map((c) => c.character!.name).sort();
+
+        expect(names).toContain("TestInfinity");
+        expect(names).toContain("TestInfinityFort");
+        expect(names).not.toContain("TestFortOnly");
+      });
+
+      it("should filter by multiple mercenary items with AND logic", async () => {
+        const filter: CharacterFilter = {
+          requiredMercItems: ["Colossus Voulge", "Sacred Armor"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        const names = results.characters.map((c) => c.character!.name);
+
+        expect(names.length).toBe(1);
+        expect(names).toContain("TestInfinityFort");
+        expect(names).not.toContain("TestInfinity"); // Missing Sacred Armor
+        expect(names).not.toContain("TestFortOnly"); // Missing Colossus Voulge
+      });
+
+      it("should return no results when character missing required item", async () => {
+        const filter: CharacterFilter = {
+          requiredMercItems: ["Colossus Voulge", "Giant Thresher"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        expect(results.characters.length).toBe(0);
+      });
+    });
+
+    describe("Combined Character and Mercenary Filters", () => {
+      beforeEach(async () => {
+        const char1 = {
+          character: {
+            name: "TestSorcOff",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 1, name: "Sorceress" },
+            skills: [{ id: 40, name: "Blizzard", level: 40 }],
+          },
+          items: [{ name: "Harlequin Crest", quality: { name: "Unique" } }],
+          realSkills: [{ skill: "Blizzard", level: 40 }],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+            ],
+          },
+        };
+
+        const char2 = {
+          character: {
+            name: "TestPalOff",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 4, name: "Paladin" },
+            skills: [{ id: 117, name: "Holy Shield", level: 20 }],
+          },
+          items: [{ name: "Harlequin Crest", quality: { name: "Unique" } }],
+          realSkills: [{ skill: "Holy Shield", level: 20 }],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+            ],
+          },
+        };
+
+        await Promise.all([
+          db.ingestCharacter(char1, gameModeSC, season11),
+          db.ingestCharacter(char2, gameModeSC, season11),
+        ]);
+      });
+
+      it("should filter by class + mercenary type", async () => {
+        const filter: CharacterFilter = {
+          requiredClasses: ["Sorceress"],
+          requiredMercTypes: ["Offensive Auras"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        const names = results.characters.map((c) => c.character!.name);
+
+        expect(names.length).toBe(1);
+        expect(names).toContain("TestSorcOff");
+        expect(names).not.toContain("TestPalOff");
+      });
+
+      it("should filter by character item + mercenary item", async () => {
+        const filter: CharacterFilter = {
+          requiredItems: ["Harlequin Crest"],
+          requiredMercItems: ["Colossus Voulge"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        const names = results.characters.map((c) => c.character!.name).sort();
+
+        expect(names).toContain("TestSorcOff");
+        expect(names).toContain("TestPalOff");
+      });
+
+      it("should filter by class + character item + merc type + merc item", async () => {
+        const filter: CharacterFilter = {
+          requiredClasses: ["Sorceress"],
+          requiredItems: ["Harlequin Crest"],
+          requiredSkills: [{ name: "Blizzard", minLevel: 30 }],
+          requiredMercTypes: ["Offensive Auras"],
+          requiredMercItems: ["Colossus Voulge"],
+          season: season11,
+        };
+
+        const results = await db.getFilteredCharacters(gameModeSC, filter);
+        const names = results.characters.map((c) => c.character!.name);
+
+        expect(names.length).toBe(1);
+        expect(names).toContain("TestSorcOff");
+      });
+    });
+
+    describe("Mercenary Stats Analysis", () => {
+      beforeEach(async () => {
+        const char1 = {
+          character: {
+            name: "TestStatsMerc1",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 1, name: "Sorceress" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Vampire Gaze", quality: { name: "Unique" } },
+            ],
+          },
+        };
+
+        const char2 = {
+          character: {
+            name: "TestStatsMerc2",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 4, name: "Paladin" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+            ],
+          },
+        };
+
+        const char3 = {
+          character: {
+            name: "TestStatsMerc3",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 3, name: "Barbarian" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Cold Spells",
+            items: [{ name: "Vampire Gaze", quality: { name: "Unique" } }],
+          },
+        };
+
+        await Promise.all([
+          db.ingestCharacter(char1, gameModeSC, season11),
+          db.ingestCharacter(char2, gameModeSC, season11),
+          db.ingestCharacter(char3, gameModeSC, season11),
+        ]);
+      });
+
+      it("should analyze mercenary type usage", async () => {
+        const stats = await db.analyzeMercTypeUsage(gameModeSC, {
+          season: season11,
+        });
+
+        const offensiveAuras = stats.find(
+          (s) => s.mercType === "Offensive Auras"
+        );
+        const coldSpells = stats.find((s) => s.mercType === "Cold Spells");
+
+        expect(offensiveAuras).toBeDefined();
+        expect(offensiveAuras?.numOccurrences).toBe(2);
+        expect(offensiveAuras?.pct).toBeCloseTo(66.67, 1);
+
+        expect(coldSpells).toBeDefined();
+        expect(coldSpells?.numOccurrences).toBe(1);
+        expect(coldSpells?.pct).toBeCloseTo(33.33, 1);
+      });
+
+      it("should analyze mercenary item usage", async () => {
+        const stats = await db.analyzeMercItemUsage(gameModeSC, {
+          season: season11,
+        });
+
+        const voulge = stats.find((s) => s.item === "Colossus Voulge");
+        const vampGaze = stats.find((s) => s.item === "Vampire Gaze");
+
+        expect(voulge).toBeDefined();
+        expect(voulge?.numOccurrences).toBe(2);
+        expect(voulge?.pct).toBeCloseTo(66.67, 1);
+        expect(voulge?.itemType).toBe("Runeword");
+
+        expect(vampGaze).toBeDefined();
+        expect(vampGaze?.numOccurrences).toBe(2);
+        expect(vampGaze?.pct).toBeCloseTo(66.67, 1);
+        expect(vampGaze?.itemType).toBe("Unique");
+      });
+
+      it("should analyze merc type usage with class filter", async () => {
+        const filter: CharacterFilter = {
+          requiredClasses: ["Sorceress"],
+          season: season11,
+        };
+
+        const stats = await db.analyzeMercTypeUsage(gameModeSC, filter);
+
+        expect(stats.length).toBe(1);
+        expect(stats[0].mercType).toBe("Offensive Auras");
+        expect(stats[0].numOccurrences).toBe(1);
+        expect(stats[0].pct).toBe(100);
+      });
+
+      it("should analyze merc item usage with merc type filter", async () => {
+        const filter: CharacterFilter = {
+          requiredMercTypes: ["Offensive Auras"],
+          season: season11,
+        };
+
+        const stats = await db.analyzeMercItemUsage(gameModeSC, filter);
+
+        const voulge = stats.find((s) => s.item === "Colossus Voulge");
+        const vampGaze = stats.find((s) => s.item === "Vampire Gaze");
+
+        expect(voulge?.numOccurrences).toBe(2);
+        expect(voulge?.pct).toBe(100);
+
+        expect(vampGaze?.numOccurrences).toBe(1);
+        expect(vampGaze?.pct).toBe(50);
+      });
+    });
+
+    describe("Mercenary Update and CASCADE", () => {
+      it("should replace mercenary data when re-ingesting character", async () => {
+        const charData1 = {
+          character: {
+            name: "TestUpdateMerc",
+            level: 95,
+            life: 1500,
+            mana: 1000,
+            class: { id: 1, name: "Sorceress" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Offensive Auras",
+            items: [
+              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+            ],
+          },
+        };
+
+        await db.ingestCharacter(charData1, gameModeSC, season11);
+
+        let char = await db.getCharacterByName(
+          gameModeSC,
+          "TestUpdateMerc",
+          season11
+        );
+        expect(char?.mercenary?.description).toBe("Offensive Auras");
+        expect(char?.mercenary?.items?.length).toBe(1);
+
+        // Re-ingest with different mercenary
+        const charData2 = {
+          character: {
+            name: "TestUpdateMerc",
+            level: 96,
+            life: 1500,
+            mana: 1000,
+            class: { id: 1, name: "Sorceress" },
+            skills: [],
+          },
+          items: [],
+          realSkills: [],
+          lastUpdated: Date.now(),
+          mercenary: {
+            description: "Cold Spells",
+            items: [
+              { name: "Giant Thresher", quality: { name: "Runeword" } },
+              { name: "Vampire Gaze", quality: { name: "Unique" } },
+            ],
+          },
+        };
+
+        await db.ingestCharacter(charData2, gameModeSC, season11);
+
+        char = await db.getCharacterByName(
+          gameModeSC,
+          "TestUpdateMerc",
+          season11
+        );
+        expect(char?.mercenary?.description).toBe("Cold Spells");
+        expect(char?.mercenary?.items?.length).toBe(2);
+      });
+    });
+  });
 });
