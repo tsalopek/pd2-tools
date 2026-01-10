@@ -24,6 +24,8 @@ router.get(
         classes,
         items,
         skills,
+        mercTypes,
+        mercItems,
         season,
       } = req.query;
 
@@ -61,6 +63,12 @@ router.get(
         } catch {
           // Invalid skills format, ignore
         }
+      }
+      if (mercTypes) {
+        filter.requiredMercTypes = (mercTypes as string).split(",");
+      }
+      if (mercItems) {
+        filter.requiredMercItems = (mercItems as string).split(",");
       }
       if (season) {
         filter.season = parseInt(season as string, 10);
@@ -195,6 +203,8 @@ router.get(
         classes,
         items,
         skills,
+        mercTypes,
+        mercItems,
         season,
       } = req.query;
 
@@ -235,6 +245,14 @@ router.get(
         } catch {
           // Invalid skills format, ignore
         }
+      }
+
+      if (mercTypes) {
+        filter.requiredMercTypes = (mercTypes as string).split(",");
+      }
+
+      if (mercItems) {
+        filter.requiredMercItems = (mercItems as string).split(",");
       }
 
       if (season) {
@@ -273,6 +291,8 @@ router.get(
         classes,
         items,
         skills,
+        mercTypes,
+        mercItems,
         season,
       } = req.query;
 
@@ -315,6 +335,14 @@ router.get(
         }
       }
 
+      if (mercTypes) {
+        filter.requiredMercTypes = (mercTypes as string).split(",");
+      }
+
+      if (mercItems) {
+        filter.requiredMercItems = (mercItems as string).split(",");
+      }
+
       if (season) {
         filter.season = parseInt(season as string, 10);
       } else {
@@ -332,6 +360,156 @@ router.get(
       });
       res.status(500).json({
         error: { message: "Failed to analyze skill usage" },
+      });
+    }
+  }
+);
+
+// GET /api/characters/stats/merc-type-usage - Get mercenary type usage statistics
+router.get(
+  "/stats/merc-type-usage",
+  validateSeason,
+  autoCache(900),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        gameMode = "softcore",
+        minLevel,
+        maxLevel,
+        classes,
+        items,
+        skills,
+        mercTypes,
+        mercItems,
+        season,
+      } = req.query;
+
+      const filter: Record<string, unknown> & {
+        levelRange?: { min?: number; max?: number };
+      } = {};
+
+      if (minLevel || maxLevel) {
+        filter.levelRange = {};
+        if (minLevel) filter.levelRange.min = parseInt(minLevel as string, 10);
+        if (maxLevel) filter.levelRange.max = parseInt(maxLevel as string, 10);
+      }
+
+      if (classes) filter.requiredClasses = (classes as string).split(",");
+      if (items) filter.requiredItems = (items as string).split(",");
+      if (mercTypes) filter.requiredMercTypes = (mercTypes as string).split(",");
+      if (mercItems) filter.requiredMercItems = (mercItems as string).split(",");
+
+      if (skills) {
+        try {
+          const skillsData = JSON.parse(decodeURIComponent(skills as string));
+          if (
+            Array.isArray(skillsData) &&
+            skillsData.every(
+              (skill) =>
+                typeof skill === "object" &&
+                typeof skill.name === "string" &&
+                typeof skill.minLevel === "number"
+            )
+          ) {
+            filter.requiredSkills = skillsData;
+          }
+        } catch {
+          // Invalid skills format, ignore
+        }
+      }
+
+      if (season) {
+        filter.season = parseInt(season as string, 10);
+      } else {
+        filter.season = config.currentSeason;
+      }
+
+      const mercTypeUsage = await characterDB.analyzeMercTypeUsage(
+        gameMode as string,
+        filter
+      );
+      res.json(mercTypeUsage);
+    } catch (error: unknown) {
+      logger.error("Error analyzing merc type usage", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({
+        error: { message: "Failed to analyze merc type usage" },
+      });
+    }
+  }
+);
+
+// GET /api/characters/stats/merc-item-usage - Get mercenary item usage statistics
+router.get(
+  "/stats/merc-item-usage",
+  validateSeason,
+  autoCache(900),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        gameMode = "softcore",
+        minLevel,
+        maxLevel,
+        classes,
+        items,
+        skills,
+        mercTypes,
+        mercItems,
+        season,
+      } = req.query;
+
+      const filter: Record<string, unknown> & {
+        levelRange?: { min?: number; max?: number };
+      } = {};
+
+      if (minLevel || maxLevel) {
+        filter.levelRange = {};
+        if (minLevel) filter.levelRange.min = parseInt(minLevel as string, 10);
+        if (maxLevel) filter.levelRange.max = parseInt(maxLevel as string, 10);
+      }
+
+      if (classes) filter.requiredClasses = (classes as string).split(",");
+      if (items) filter.requiredItems = (items as string).split(",");
+      if (mercTypes) filter.requiredMercTypes = (mercTypes as string).split(",");
+      if (mercItems) filter.requiredMercItems = (mercItems as string).split(",");
+
+      if (skills) {
+        try {
+          const skillsData = JSON.parse(decodeURIComponent(skills as string));
+          if (
+            Array.isArray(skillsData) &&
+            skillsData.every(
+              (skill) =>
+                typeof skill === "object" &&
+                typeof skill.name === "string" &&
+                typeof skill.minLevel === "number"
+            )
+          ) {
+            filter.requiredSkills = skillsData;
+          }
+        } catch {
+          // Invalid skills format, ignore
+        }
+      }
+
+      if (season) {
+        filter.season = parseInt(season as string, 10);
+      } else {
+        filter.season = config.currentSeason;
+      }
+
+      const mercItemUsage = await characterDB.analyzeMercItemUsage(
+        gameMode as string,
+        filter
+      );
+      res.json(mercItemUsage);
+    } catch (error: unknown) {
+      logger.error("Error analyzing merc item usage", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({
+        error: { message: "Failed to analyze merc item usage" },
       });
     }
   }

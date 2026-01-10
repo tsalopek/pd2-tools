@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Container, Skeleton, Grid } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { useMediaQuery } from "@mantine/hooks";
@@ -13,13 +13,45 @@ import {
 } from "../components/character";
 import type { PlayerToggle, SkillsView } from "../types";
 
+interface NavContext {
+  list: string[];
+  currentIndex: number;
+}
+
 export default function Character() {
   const { name } = useParams<{ name: string }>();
+  const [searchParams] = useSearchParams();
   const characterName = name;
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [playerToggle, setPlayerToggle] = useState<PlayerToggle>("player");
   const [skillsView, setSkillsView] = useState<SkillsView>("text");
   const [didError, setDidError] = useState(false);
+
+  // Get nav ID from URL params
+  const navId = searchParams.get("nav");
+
+  // Get prev/next characters from navigation context (keyed by navId)
+  const { prevCharacter, nextCharacter } = useMemo(() => {
+    try {
+      if (!navId) return { prevCharacter: null, nextCharacter: null };
+
+      const ctx = sessionStorage.getItem(`characterNavContext_${navId}`);
+      if (!ctx) return { prevCharacter: null, nextCharacter: null };
+
+      const parsed: NavContext = JSON.parse(ctx);
+      const currentIndex = parsed.list.indexOf(characterName || "");
+
+      // If character not in list, try using stored index
+      const idx = currentIndex !== -1 ? currentIndex : parsed.currentIndex;
+
+      return {
+        prevCharacter: idx > 0 ? parsed.list[idx - 1] : null,
+        nextCharacter: idx < parsed.list.length - 1 ? parsed.list[idx + 1] : null,
+      };
+    } catch {
+      return { prevCharacter: null, nextCharacter: null };
+    }
+  }, [characterName, navId]);
 
   const charQuery = useQuery({
     queryKey: ["character", characterName],
@@ -64,6 +96,8 @@ export default function Character() {
                 level={charQuery.data.character.level}
                 lastUpdated={charQuery.data?.lastUpdated}
                 isMobile={isMobile}
+                prevCharacter={prevCharacter}
+                nextCharacter={nextCharacter}
               />
             </Grid.Col>
 

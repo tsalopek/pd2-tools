@@ -45,6 +45,8 @@ export interface CharacterFilter {
   requiredClasses?: string[];
   requiredItems?: string[];
   requiredSkills?: Array<{ name: string; minLevel: number }>;
+  requiredMercTypes?: string[];
+  requiredMercItems?: string[];
   levelRange?: {
     min?: number;
     max?: number;
@@ -68,6 +70,13 @@ export interface ItemUsageStats {
 
 export interface SkillUsageStats {
   name: string;
+  numOccurrences: number;
+  totalSample: number;
+  pct: number;
+}
+
+export interface MercTypeStats {
+  mercType: string;
   numOccurrences: number;
   totalSample: number;
   pct: number;

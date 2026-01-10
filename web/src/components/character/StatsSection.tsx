@@ -85,8 +85,35 @@ function StatGroup({ title, tooltip, children }: StatGroupProps) {
 export function StatsSection({
   attributes,
   stats,
-  realStats,
+  realStats: realStatsInput,
 }: StatsSectionProps) {
+  const realStats = realStatsInput || {
+    strength: attributes.strength,
+    dexterity: attributes.dexterity,
+    vitality: attributes.vitality,
+    energy: attributes.energy,
+    fireRes: -70,
+    maxFireRes: 75,
+    coldRes: -70,
+    maxColdRes: 75,
+    lightningRes: -70,
+    maxLightningRes: 75,
+    poisonRes: -70,
+    maxPoisonRes: 75,
+    fAbsorbFlat: 0,
+    fAbsorbPct: 0,
+    cAbsorbFlat: 0,
+    cAbsorbPct: 0,
+    lAbsorbFlat: 0,
+    lAbsorbPct: 0,
+    fcr: 0,
+    fhr: 0,
+    frw: 0,
+    ias: 0,
+    mf: 0,
+    gf: 0,
+    pdr: 0,
+  };
   return (
     <Card radius="md" shadow="md" padding="md">
       {/* Header */}
