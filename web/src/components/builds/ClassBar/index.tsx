@@ -152,6 +152,8 @@ export default function ClassBar({
       classFilter: [],
       itemFilter: [],
       skillFilter: [],
+      mercTypeFilter: [],
+      mercItemFilter: [],
       searchQuery: "",
     });
   };
