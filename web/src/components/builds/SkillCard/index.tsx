@@ -4,13 +4,14 @@ import {
   Flex,
   Text,
   Paper,
-  ScrollArea,
   Tooltip,
   ActionIcon,
 } from "@mantine/core";
 import { IconInfoCircle, IconX } from "@tabler/icons-react";
+import { List, RowComponentProps } from "react-window";
 import type { CharacterFilters, SkillRequirement } from "../../../../hooks";
 import type { SkillUsageStats } from "../../../../types";
+import styles from "../VirtualList.module.css";
 
 interface Props {
   data: {
@@ -72,17 +73,18 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
   }, [data.skillUsage, filters.searchQuery, selectedSkillsSet]);
 
   const hasSkills = skillPercentages.length > 0;
-  const needsScroll = skillPercentages.length > 8;
 
-  const SkillItem = ({
-    name,
-    percentage,
-    isSelected,
-  }: {
-    name: string;
-    percentage: number;
-    isSelected: boolean;
-  }) => (
+  const ROW_HEIGHT = 35;
+  const MAX_HEIGHT = 350;
+  const listHeight = Math.min(skillPercentages.length * ROW_HEIGHT, MAX_HEIGHT);
+  const needsScroll = skillPercentages.length * ROW_HEIGHT > MAX_HEIGHT;
+
+  type SkillRowData = { name: string; percentage: number; isSelected: boolean };
+
+  const SkillRow = ({ index, skills, style }: RowComponentProps<{ skills: SkillRowData[] }>) => {
+    const { name, percentage, isSelected } = skills[index];
+    return (
+      <div style={style}>
     <Paper
       key={name}
       withBorder
@@ -121,13 +123,24 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
           zIndex: 0,
         }}
       />
-      <Tooltip label={name} openDelay={500}>
+      <Tooltip label={name} position="right" openDelay={500} withArrow>
         <Flex
           justify="space-between"
           align="center"
           style={{ position: "relative", zIndex: 1 }}
         >
-          <Text lineClamp={1}>{name}</Text>
+          <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
+            <img
+              src={`/icons/${name.replaceAll(" ", "_")}.png`}
+              alt={name}
+              style={{
+                width: "20px",
+                height: "20px",
+                flexShrink: 0,
+              }}
+            />
+            <Text lineClamp={1}>{name}</Text>
+          </Flex>
           {isSelected ? (
             <ActionIcon
               size="xs"
@@ -145,7 +158,9 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
         </Flex>
       </Tooltip>
     </Paper>
-  );
+    </div>
+    );
+  };
 
   return (
     <Card
@@ -178,38 +193,16 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
         </Tooltip>
       </div>
 
-      {hasSkills &&
-        (needsScroll ? (
-          <ScrollArea
-            style={{ flex: 1 }}
-            offsetScrollbars={"y"}
-            scrollbarSize={8}
-            type={"auto"}
-            h={1000}
-          >
-            <div>
-              {skillPercentages.map((skill) => (
-                <SkillItem
-                  key={skill.name}
-                  name={skill.name}
-                  percentage={skill.percentage}
-                  isSelected={skill.isSelected}
-                />
-              ))}
-            </div>
-          </ScrollArea>
-        ) : (
-          <div style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.15)' }}>
-            {skillPercentages.map((skill) => (
-              <SkillItem
-                key={skill.name}
-                name={skill.name}
-                percentage={skill.percentage}
-                isSelected={skill.isSelected}
-              />
-            ))}
-          </div>
-        ))}
+      {hasSkills && (
+        <List
+          rowComponent={SkillRow}
+          rowCount={skillPercentages.length}
+          rowHeight={ROW_HEIGHT}
+          rowProps={{ skills: skillPercentages }}
+          style={{ height: listHeight, backgroundColor: 'rgba(0, 0, 0, 0.15)', overflowY: needsScroll ? 'auto' : 'hidden' }}
+          className={styles.virtualList}
+        />
+      )}
     </Card>
   );
 }

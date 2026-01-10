@@ -1,7 +1,9 @@
 import React, { useMemo } from "react";
-import { Card, Flex, Text, Paper, ScrollArea, ActionIcon } from "@mantine/core";
+import { Card, Flex, Text, Paper, ActionIcon, Tooltip } from "@mantine/core";
 import { IconX } from "@tabler/icons-react";
+import { List, RowComponentProps } from "react-window";
 import type { CharacterFilters } from "../../../hooks";
+import styles from "../VirtualList.module.css";
 
 const classes = [
   "Amazon",
@@ -83,6 +85,95 @@ export default function ClassCard({
 
   const hasClasses = filteredClasses.length > 0;
 
+  const ROW_HEIGHT = 35;
+  const MAX_HEIGHT = 300;
+  const listHeight = Math.min(filteredClasses.length * ROW_HEIGHT, MAX_HEIGHT);
+  const needsScroll = filteredClasses.length * ROW_HEIGHT > MAX_HEIGHT;
+
+  type ClassRowData = { name: string; percentage: number; isSelected: boolean };
+
+  const ClassRow = ({ index, classes, style }: RowComponentProps<{ classes: ClassRowData[] }>) => {
+    const { name, percentage, isSelected } = classes[index];
+    return (
+      <div style={style}>
+      <Paper
+        key={name}
+        withBorder
+        radius={0}
+        p="5"
+        style={{
+          cursor: "pointer",
+          borderLeft: "none",
+          borderRight: "none",
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: isSelected
+            ? "rgba(0, 255, 0, 0.2)"
+            : undefined,
+        }}
+        variant="hover"
+        onClick={(e) => {
+          const backgroundBar = e.currentTarget.querySelector(
+            'div[style*="position: absolute"]'
+          ) as HTMLElement | null;
+          if (backgroundBar) {
+            backgroundBar.style.width = "0%";
+          }
+          handleClassSelect(name);
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: `${percentage}%`,
+            backgroundColor: isSelected
+              ? "rgba(0, 255, 0, 0.2)"
+              : "rgba(59, 130, 246, 0.35)",
+            zIndex: 0,
+          }}
+        />
+        <Tooltip label={name} position="right" openDelay={500} withArrow>
+          <Flex
+            justify="space-between"
+            align="center"
+            style={{ position: "relative", zIndex: 1 }}
+          >
+            <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
+              <img
+                src={`/${name}.webp`}
+                alt={name}
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  flexShrink: 0,
+                }}
+              />
+              <Text lineClamp={1}>{name}</Text>
+            </Flex>
+            {isSelected ? (
+              <ActionIcon
+                size="xs"
+                variant="default"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClassSelect(name);
+                }}
+              >
+                <IconX size={14} />
+              </ActionIcon>
+            ) : (
+              <Text>{percentage.toFixed(1)}%</Text>
+            )}
+          </Flex>
+        </Tooltip>
+      </Paper>
+      </div>
+    );
+  };
+
   return (
     <Card
       p={0}
@@ -104,71 +195,14 @@ export default function ClassCard({
       </div>
 
       {hasClasses ? (
-        <ScrollArea style={{ flex: 1 }}>
-          {filteredClasses.map(({ name, percentage, isSelected }) => (
-            <Paper
-              key={name}
-              withBorder
-              radius={0}
-              p="5"
-              style={{
-                cursor: "pointer",
-                borderLeft: "none",
-                borderRight: "none",
-                position: "relative",
-                overflow: "hidden",
-                backgroundColor: isSelected
-                  ? "rgba(0, 255, 0, 0.2)"
-                  : undefined,
-              }}
-              variant="hover"
-              onClick={(e) => {
-                const backgroundBar = e.currentTarget.querySelector(
-                  'div[style*="position: absolute"]'
-                ) as HTMLElement | null;
-                if (backgroundBar) {
-                  backgroundBar.style.width = "0%";
-                }
-                handleClassSelect(name);
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  width: `${percentage}%`,
-                  backgroundColor: isSelected
-                    ? "rgba(0, 255, 0, 0.2)"
-                    : "rgba(59, 130, 246, 0.35)",
-                  zIndex: 0,
-                }}
-              />
-              <Flex
-                justify="space-between"
-                align="center"
-                style={{ position: "relative", zIndex: 1 }}
-              >
-                <Text>{name}</Text>
-                {isSelected ? (
-                  <ActionIcon
-                    size="xs"
-                    variant="default"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClassSelect(name);
-                    }}
-                  >
-                    <IconX size={14} />
-                  </ActionIcon>
-                ) : (
-                  <Text>{percentage.toFixed(1)}%</Text>
-                )}
-              </Flex>
-            </Paper>
-          ))}
-        </ScrollArea>
+        <List
+          rowComponent={ClassRow}
+          rowCount={filteredClasses.length}
+          rowHeight={ROW_HEIGHT}
+          rowProps={{ classes: filteredClasses }}
+          style={{ height: listHeight, overflowY: needsScroll ? 'auto' : 'hidden' }}
+          className={styles.virtualList}
+        />
       ) : (
         <></>
       )}
