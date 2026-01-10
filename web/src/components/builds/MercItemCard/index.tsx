@@ -70,11 +70,11 @@ export default function MercItemCard({ data, filters, updateFilters }: Props) {
   const getItemTypeColor = (type: string) => {
     switch (type) {
       case "Unique":
-        return "rgba(200, 110, 45, 0.35)";
+        return "rgba(193, 125, 58, 0.35)";
       case "Set":
-        return "rgba(21, 209, 30, 0.35)";
+        return "rgba(30, 237, 14, 0.35)";
       case "Runeword":
-        return "rgba(181, 184, 31, 0.35)";
+        return "rgba(250, 204, 21, 0.35)";
       default:
         return "rgba(200, 200, 200, 0.1)";
     }
@@ -167,6 +167,7 @@ export default function MercItemCard({ data, filters, updateFilters }: Props) {
         flexDirection: "column",
         maxHeight: "400px",
         height: hasItems ? undefined : "auto",
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
       }}
     >
       <div style={{ padding: "6px" }}>
@@ -195,7 +196,7 @@ export default function MercItemCard({ data, filters, updateFilters }: Props) {
             </div>
           </ScrollArea>
         ) : (
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.15)' }}>
             {itemPercentages.map((item) => (
               <ItemRow
                 key={item.name}

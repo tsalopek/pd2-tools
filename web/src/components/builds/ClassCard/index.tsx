@@ -92,6 +92,7 @@ export default function ClassCard({
         flexDirection: "column",
         maxHeight: "400px",
         height: hasClasses ? undefined : "auto",
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
       }}
     >
       <div
@@ -138,7 +139,7 @@ export default function ClassCard({
                   right: 0,
                   bottom: 0,
                   width: `${percentage}%`,
-                  backgroundColor: "rgba(0, 255, 0, 0.2)",
+                  backgroundColor: "rgba(59, 130, 246, 0.35)",
                   zIndex: 0,
                 }}
               />

@@ -160,7 +160,16 @@ export default function ClassBar({
 
   return (
     <SimpleGrid cols={1} spacing="md">
-      <Card withBorder w="100%" h="75px" py="xs" px="sm">
+      <Card
+        withBorder
+        w="100%"
+        h="75px"
+        py="xs"
+        px="sm"
+        style={{
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)',
+        }}
+      >
         <Flex
           gap="sm"
           justify="space-between"
@@ -215,7 +224,14 @@ export default function ClassBar({
       </Card>
 
       <div style={{ display: "flex", gap: "16px" }}>
-        <Card withBorder style={{ width: "185px", height: "60px" }}>
+        <Card
+          withBorder
+          style={{
+            width: "185px",
+            height: "60px",
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
+          }}
+        >
           <Flex justify="center" align="center" h="100%">
             <TextInput
               placeholder="Search filters..."
@@ -236,7 +252,14 @@ export default function ClassBar({
             />
           </Flex>
         </Card>
-        <Card withBorder style={{ flex: 1, height: "60px" }}>
+        <Card
+          withBorder
+          style={{
+            flex: 1,
+            height: "60px",
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)',
+          }}
+        >
           <Flex align="center" justify="space-between" h="100%">
             {isMobile ? null : (
               <Text>

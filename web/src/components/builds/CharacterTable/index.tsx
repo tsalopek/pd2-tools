@@ -275,6 +275,11 @@ export default function PlayerTable({
         pageSize: 40,
       },
     },
+    mantinePaperProps: {
+      style: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25)',
+      },
+    },
     mantineTableProps: {
       highlightOnHover: true,
       striped: "odd",

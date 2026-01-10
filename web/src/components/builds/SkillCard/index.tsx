@@ -117,7 +117,7 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
           width: `${percentage}%`,
           backgroundColor: isSelected
             ? "rgba(0, 255, 0, 0.2)"
-            : "rgba(33, 150, 243, 0.35)",
+            : "rgba(168, 85, 247, 0.35)",
           zIndex: 0,
         }}
       />
@@ -156,6 +156,7 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
         flexDirection: "column",
         maxHeight: "400px",
         height: hasSkills ? undefined : "auto",
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
       }}
     >
       <div
@@ -198,7 +199,7 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
             </div>
           </ScrollArea>
         ) : (
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.15)' }}>
             {skillPercentages.map((skill) => (
               <SkillItem
                 key={skill.name}

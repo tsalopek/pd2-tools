@@ -7,20 +7,20 @@ const SCALE_FACTOR = 0.8; // 80% of original size
 // Rarity colors
 const getRarityColor = (item: any): string | null => {
   if (!item) return null;
-  if (item.is_runeword) return "#B8860B"; // Runeword - gold
+  if (item.is_runeword) return "#FACC15";
   switch (item.quality?.name?.toLowerCase()) {
     case "unique":
-      return "#c17d3a"; // Unique - brownish orange
+      return "#c17d3a";
     case "set":
-      return "#1eed0e"; // Set - bright green
+      return "#1eed0e";
     case "rare":
-      return "#ffff00"; // Rare - yellow
+      return "#ffff00";
     case "magic":
-      return "#4545ff"; // Magic - blue
+      return "#4545ff";
     case "crafted":
-      return "#ffa800"; // Crafted - orange
+      return "#ffa800";
     default:
-      return null; // Normal/white items - no special color
+      return null;
   }
 };
 
