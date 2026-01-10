@@ -4,6 +4,36 @@ import { IconX } from "@tabler/icons-react";
 import type { CharacterFilters } from "../../../hooks";
 import type { MercTypeStats } from "../../../types";
 
+// Map API descriptions to display names (Act + Aura)
+const MERC_TYPE_DISPLAY: Record<string, string> = {
+  // Act 1 Rogues
+  "Fire Arrow": "A1 Vigor",
+  "Cold Arrow": "A1 Meditation",
+  "Physical Arrow": "A1 Slow Movement",
+
+  // Act 2 Desert Guards
+  "Defensive Auras": "A2 Defiance",
+  "Offensive Auras": "A2 Blessed Aim",
+  "Combat": "A2 Thorns",
+
+  // Act 3 Iron Wolves
+  "Fire Spells": "A3 Cleansing",
+  "Cold Spells": "A3 Prayer",
+  "Lightning Spells": "A3 Holy Shock",
+
+  // Act 4 Ascendants
+  "Dark": "A4 Amplify Damage",
+  "Light": "A4 Sanctuary",
+
+  // Act 5 Barbarians
+  "Might Merc": "A5 Might",
+  "Warcries": "A5 Battle Orders",
+};
+
+const getMercTypeDisplay = (rawType: string): string => {
+  return MERC_TYPE_DISPLAY[rawType] || rawType;
+};
+
 interface Props {
   data: {
     mercTypeUsage: MercTypeStats[];
@@ -31,12 +61,17 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
     return data.mercTypeUsage
       .filter((mercType) => {
         if (mercType.pct === 0) return false;
-        if (searchQuery && !mercType.mercType.toLowerCase().includes(searchQuery))
-          return false;
+        if (searchQuery) {
+          const displayName = getMercTypeDisplay(mercType.mercType).toLowerCase();
+          const rawName = mercType.mercType.toLowerCase();
+          if (!displayName.includes(searchQuery) && !rawName.includes(searchQuery))
+            return false;
+        }
         return true;
       })
       .map((mercType) => ({
-        name: mercType.mercType,
+        rawName: mercType.mercType,
+        displayName: getMercTypeDisplay(mercType.mercType),
         percentage: mercType.pct,
         isSelected: selectedMercTypesSet.has(mercType.mercType),
       }))
@@ -54,6 +89,7 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
         flexDirection: "column",
         maxHeight: "425px",
         height: hasMercTypes ? undefined : "auto",
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
       }}
     >
       <div style={{ padding: "6px" }}>
@@ -62,9 +98,9 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
 
       {hasMercTypes ? (
         <ScrollArea style={{ flex: 1 }}>
-          {filteredMercTypes.map(({ name, percentage, isSelected }) => (
+          {filteredMercTypes.map(({ rawName, displayName, percentage, isSelected }) => (
             <Paper
-              key={name}
+              key={rawName}
               withBorder
               radius={0}
               p="5"
@@ -84,7 +120,7 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
                 if (backgroundBar) {
                   backgroundBar.style.width = "0%";
                 }
-                handleMercTypeSelect(name);
+                handleMercTypeSelect(rawName);
               }}
             >
               <div
@@ -94,7 +130,7 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
                   right: 0,
                   bottom: 0,
                   width: `${percentage}%`,
-                  backgroundColor: "rgba(0, 255, 0, 0.2)",
+                  backgroundColor: "rgba(6, 182, 212, 0.35)",
                   zIndex: 0,
                 }}
               />
@@ -103,14 +139,14 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
                 align="center"
                 style={{ position: "relative", zIndex: 1 }}
               >
-                <Text>{name}</Text>
+                <Text>{displayName}</Text>
                 {isSelected ? (
                   <ActionIcon
                     size="xs"
                     variant="default"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleMercTypeSelect(name);
+                      handleMercTypeSelect(rawName);
                     }}
                   >
                     <IconX size={14} />
