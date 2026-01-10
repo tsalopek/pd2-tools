@@ -46,7 +46,7 @@ export default function PlayerTable({
   const [totalRowCount, setTotalRowCount] = useState(0);
   const [pagination, setPagination] = useState<MRT_PaginationState>({
     pageIndex: 0,
-    pageSize: 20,
+    pageSize: 40,
   });
   // Effect to fetch data when pagination or filters change
   useEffect(() => {
@@ -87,6 +87,12 @@ export default function PlayerTable({
               JSON.stringify(filters.skillFilter)
             );
           }
+          if (filters.mercTypeFilter.length) {
+            queryParams.append("mercTypes", filters.mercTypeFilter.join(","));
+          }
+          if (filters.mercItemFilter.length) {
+            queryParams.append("mercItems", filters.mercItemFilter.join(","));
+          }
           if (filters.searchQuery) {
             // Assuming 'query' is the param name for search
             queryParams.append("query", filters.searchQuery);
@@ -106,6 +112,8 @@ export default function PlayerTable({
                 filters.skillFilter.length > 0
                   ? filters.skillFilter
                   : undefined,
+              requiredMercTypes: filters.mercTypeFilter,
+              requiredMercItems: filters.mercItemFilter,
               levelRange: { min: levelRange.min, max: levelRange.max },
               season: filters.season,
             },
@@ -264,7 +272,7 @@ export default function PlayerTable({
       density: "xs",
       pagination: {
         pageIndex: 0,
-        pageSize: 20,
+        pageSize: 40,
       },
     },
     mantineTableProps: {
@@ -273,6 +281,11 @@ export default function PlayerTable({
       withColumnBorders: false,
       withRowBorders: true,
       withTableBorder: false,
+    },
+    mantineTableContainerProps: {
+      style: {
+        minHeight: "1700px",
+      },
     },
     mantinePaginationProps: {
       showRowsPerPage: false,
@@ -287,16 +300,53 @@ export default function PlayerTable({
     enableBottomToolbar: true,
     paginationDisplayMode: "default",
 
-    mantineTableBodyRowProps: ({ row }) => ({
-      component: "a",
-      href: `/builds/character/${row.original.name}`,
-      style: {
-        cursor: "pointer",
-        textDecoration: "none",
-        display: "table-row",
-        color: "inherit",
-      },
-    }),
+    mantineTableBodyRowProps: ({ row }) => {
+      // Generate unique nav ID for this search session
+      const navId = Math.random().toString(36).substring(2, 10);
+
+      // Build URL with nav ID and encoded filters
+      const searchParams = new URLSearchParams();
+      searchParams.set("nav", navId);
+      if (filters.gameMode !== "softcore") searchParams.set("gameMode", filters.gameMode);
+      if (filters.classFilter.length) searchParams.set("class", filters.classFilter.join(","));
+      if (filters.itemFilter.length) searchParams.set("items", filters.itemFilter.join(","));
+      if (filters.skillFilter.length) searchParams.set("skills", JSON.stringify(filters.skillFilter));
+      if (filters.mercTypeFilter.length) searchParams.set("mercTypes", filters.mercTypeFilter.join(","));
+      if (filters.mercItemFilter.length) searchParams.set("mercItems", filters.mercItemFilter.join(","));
+      if (filters.searchQuery) searchParams.set("query", filters.searchQuery);
+      if (filters.season !== 12) searchParams.set("season", filters.season.toString());
+
+      const href = `/builds/character/${row.original.name}?${searchParams.toString()}`;
+
+      return {
+        component: "a",
+        href,
+        style: {
+          cursor: "pointer",
+          textDecoration: "none",
+          display: "table-row",
+          color: "inherit",
+        },
+        onClick: () => {
+          // Cleanup old nav contexts (keep last 15)
+          const navKeys = Object.keys(sessionStorage).filter(k => k.startsWith("characterNavContext_"));
+          if (navKeys.length > 15) {
+            navKeys.slice(0, navKeys.length - 15).forEach(k => sessionStorage.removeItem(k));
+          }
+
+          // Store navigation context keyed by nav ID
+          const characterNames = tableDisplayData.map((c) => c.name);
+          const currentIndex = characterNames.indexOf(row.original.name);
+          sessionStorage.setItem(
+            `characterNavContext_${navId}`,
+            JSON.stringify({
+              list: characterNames,
+              currentIndex,
+            })
+          );
+        },
+      };
+    },
     muiToolbarAlertBannerProps: isError
       ? {
           color: "error",

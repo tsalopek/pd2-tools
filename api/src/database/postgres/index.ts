@@ -33,6 +33,8 @@ export interface CharacterFilter {
   requiredClasses?: string[];
   requiredItems?: string[];
   requiredSkills?: SkillRequirement[];
+  requiredMercTypes?: string[];
+  requiredMercItems?: string[];
   levelRange?: {
     min?: number;
     max?: number;
@@ -52,6 +54,13 @@ export interface ItemUsageStats {
 
 export interface SkillUsageStats {
   name: string;
+  numOccurrences: number;
+  totalSample: number;
+  pct: number;
+}
+
+export interface MercTypeStats {
+  mercType: string;
   numOccurrences: number;
   totalSample: number;
   pct: number;
@@ -179,7 +188,31 @@ export default class CharacterDB_Postgres {
             CREATE INDEX IF NOT EXISTS idx_chars_game_mode_season_level ON Characters(game_mode_id, season, level);
             CREATE INDEX IF NOT EXISTS idx_char_items_char_base ON CharacterItems(character_db_id, base_item_id);
             CREATE INDEX IF NOT EXISTS idx_char_skills_char_skill ON CharacterSkills(character_db_id, skill_def_id);
-            CREATE INDEX IF NOT EXISTS idx_char_skills_char_skill_level ON CharacterSkills(character_db_id, skill_def_id, skill_level)
+            CREATE INDEX IF NOT EXISTS idx_char_skills_char_skill_level ON CharacterSkills(character_db_id, skill_def_id, skill_level);
+
+            -- Mercenary tables
+            CREATE TABLE IF NOT EXISTS CharacterMercenaries (
+                character_db_id INTEGER PRIMARY KEY,
+                description TEXT NOT NULL,
+                FOREIGN KEY (character_db_id) REFERENCES Characters(character_db_id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS MercenaryItems (
+                merc_item_id SERIAL PRIMARY KEY,
+                character_db_id INTEGER NOT NULL,
+                base_item_id INTEGER NOT NULL,
+                quality_id INTEGER NOT NULL,
+                is_runeword BOOLEAN,
+                FOREIGN KEY (character_db_id) REFERENCES Characters(character_db_id) ON DELETE CASCADE,
+                FOREIGN KEY (base_item_id) REFERENCES BaseItems(base_item_id),
+                FOREIGN KEY (quality_id) REFERENCES Qualities(quality_id)
+            );
+
+            -- Mercenary indexes
+            CREATE INDEX IF NOT EXISTS idx_char_merc_covering ON CharacterMercenaries(character_db_id, description);
+            CREATE INDEX IF NOT EXISTS idx_merc_items_char ON MercenaryItems(character_db_id);
+            CREATE INDEX IF NOT EXISTS idx_merc_items_base ON MercenaryItems(base_item_id);
+            CREATE INDEX IF NOT EXISTS idx_merc_items_char_base ON MercenaryItems(character_db_id, base_item_id)
         `);
   }
 
@@ -427,6 +460,86 @@ export default class CharacterDB_Postgres {
         }
       }
 
+      // Insert mercenary data
+      if (charData.mercenary && typeof charData.mercenary === "object") {
+        try {
+          const mercData = charData.mercenary as {
+            description?: string;
+            items?: Array<{
+              name?: string;
+              quality?: { name?: string };
+              runeword?: boolean;
+            }>;
+          };
+
+          // Validate and insert mercenary type
+          if (
+            mercData.description &&
+            typeof mercData.description === "string"
+          ) {
+            await client.query(
+              `INSERT INTO CharacterMercenaries (character_db_id, description)
+               VALUES ($1, $2)
+               ON CONFLICT (character_db_id) DO UPDATE SET description = $2`,
+              [characterDbId, mercData.description]
+            );
+          } else {
+            console.warn(
+              `Character ${characterDbId}: Invalid mercenary description`
+            );
+          }
+
+          // Delete old merc items before inserting new ones
+          await client.query(
+            "DELETE FROM MercenaryItems WHERE character_db_id = $1",
+            [characterDbId]
+          );
+
+          // Insert merc items
+          if (Array.isArray(mercData.items) && mercData.items.length > 0) {
+            let skippedItems = 0;
+
+            for (const item of mercData.items) {
+              if (!item.name || !item.quality?.name) {
+                skippedItems++;
+                continue;
+              }
+
+              const baseItemId = await this.getOrInsertLookupId(
+                "BaseItems",
+                "name",
+                item.name
+              );
+              const qualityId = await this.getOrInsertLookupId(
+                "Qualities",
+                "name",
+                item.quality.name
+              );
+
+              if (baseItemId !== null && qualityId !== null) {
+                await client.query(
+                  `INSERT INTO MercenaryItems (character_db_id, base_item_id, quality_id, is_runeword)
+                   VALUES ($1, $2, $3, $4)`,
+                  [characterDbId, baseItemId, qualityId, !!item.runeword]
+                );
+              }
+            }
+
+            if (skippedItems > 0) {
+              console.warn(
+                `Character ${characterDbId}: Skipped ${skippedItems} invalid merc items`
+              );
+            }
+          }
+        } catch (error) {
+          console.error(
+            `Failed to insert mercenary data for character ${characterDbId}:`,
+            error
+          );
+          // Don't throw - allow character insertion to succeed even if merc data fails
+        }
+      }
+
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
@@ -499,6 +612,32 @@ export default class CharacterDB_Postgres {
           AND CS.skill_level >= $${paramIndex++}
         )`);
         params.push(skill.name, skill.minLevel);
+      }
+    }
+
+    // Merc type filter - OR logic (character can only have one merc)
+    if (filter.requiredMercTypes?.length) {
+      const placeholders = filter.requiredMercTypes
+        .map(() => `$${paramIndex++}`)
+        .join(", ");
+      whereClauses.push(`EXISTS (
+        SELECT 1 FROM CharacterMercenaries CM
+        WHERE CM.character_db_id = C.character_db_id
+        AND CM.description IN (${placeholders})
+      )`);
+      params.push(...filter.requiredMercTypes);
+    }
+
+    // Merc item filter - AND logic (each item must be present)
+    if (filter.requiredMercItems?.length) {
+      for (const mercItem of filter.requiredMercItems) {
+        whereClauses.push(`EXISTS (
+          SELECT 1 FROM MercenaryItems MI
+          JOIN BaseItems BI ON MI.base_item_id = BI.base_item_id
+          WHERE MI.character_db_id = C.character_db_id
+          AND BI.name = $${paramIndex++}
+        )`);
+        params.push(mercItem);
       }
     }
 
@@ -719,6 +858,98 @@ export default class CharacterDB_Postgres {
 
     return rows.map((row) => ({
       name: row.name,
+      numOccurrences: parseInt(row.numoccurrences, 10),
+      totalSample: parseInt(row.totalsample, 10),
+      pct:
+        row.totalsample > 0
+          ? (parseInt(row.numoccurrences, 10) / row.totalsample) * 100
+          : 0,
+    }));
+  }
+
+  public async analyzeMercTypeUsage(
+    gameModeName: string,
+    filter: CharacterFilter
+  ): Promise<MercTypeStats[]> {
+    const gameModeId = await this.getOrInsertLookupId(
+      "GameModes",
+      "name",
+      gameModeName.toLowerCase()
+    );
+    if (gameModeId === null) return [];
+
+    const { filterCTE, params } = this.buildFilterCTE(filter, gameModeId);
+
+    // Query uses composite index (character_db_id, description) for index-only scan
+    const query = `
+            WITH FilteredCharIDs AS MATERIALIZED (${filterCTE})
+            SELECT
+                CM.description AS mercType,
+                COUNT(DISTINCT CM.character_db_id) AS numOccurrences,
+                (SELECT COUNT(*) FROM FilteredCharIDs) AS totalSample
+            FROM CharacterMercenaries CM
+            WHERE CM.character_db_id IN (SELECT character_db_id FROM FilteredCharIDs)
+            GROUP BY CM.description
+            ORDER BY numOccurrences DESC
+        `;
+
+    const { rows } = await this.pool.query(query, params);
+
+    return rows.map((row) => ({
+      mercType: row.merctype,
+      numOccurrences: parseInt(row.numoccurrences, 10),
+      totalSample: parseInt(row.totalsample, 10),
+      pct:
+        row.totalsample > 0
+          ? (parseInt(row.numoccurrences, 10) / row.totalsample) * 100
+          : 0,
+    }));
+  }
+
+  public async analyzeMercItemUsage(
+    gameModeName: string,
+    filter: CharacterFilter
+  ): Promise<ItemUsageStats[]> {
+    const gameModeId = await this.getOrInsertLookupId(
+      "GameModes",
+      "name",
+      gameModeName.toLowerCase()
+    );
+    if (gameModeId === null) return [];
+
+    const { filterCTE, params } = this.buildFilterCTE(filter, gameModeId);
+
+    const query = `
+            WITH FilteredCharIDs AS MATERIALIZED (${filterCTE})
+            SELECT
+                BI.name AS item,
+                CASE
+                    WHEN MI.is_runeword = true THEN 'Runeword'
+                    WHEN Q.name = 'Unique' THEN 'Unique'
+                    WHEN Q.name = 'Set' THEN 'Set'
+                    ELSE NULL
+                END AS itemType,
+                COUNT(DISTINCT MI.character_db_id) AS numOccurrences,
+                (SELECT COUNT(*) FROM FilteredCharIDs) AS totalSample
+            FROM MercenaryItems MI
+            JOIN BaseItems BI ON MI.base_item_id = BI.base_item_id
+            JOIN Qualities Q ON MI.quality_id = Q.quality_id
+            WHERE MI.character_db_id IN (SELECT character_db_id FROM FilteredCharIDs)
+            AND CASE
+                WHEN MI.is_runeword = true THEN 'Runeword'
+                WHEN Q.name = 'Unique' THEN 'Unique'
+                WHEN Q.name = 'Set' THEN 'Set'
+                ELSE NULL
+            END IS NOT NULL
+            GROUP BY BI.name, itemType
+            ORDER BY numOccurrences DESC
+        `;
+
+    const { rows } = await this.pool.query(query, params);
+
+    return rows.map((row) => ({
+      item: row.item,
+      itemType: row.itemtype as ItemType,
       numOccurrences: parseInt(row.numoccurrences, 10),
       totalSample: parseInt(row.totalsample, 10),
       pct:
