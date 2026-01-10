@@ -130,7 +130,9 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
                   right: 0,
                   bottom: 0,
                   width: `${percentage}%`,
-                  backgroundColor: "rgba(6, 182, 212, 0.35)",
+                  backgroundColor: isSelected
+                    ? "rgba(0, 255, 0, 0.2)"
+                    : "rgba(6, 182, 212, 0.35)",
                   zIndex: 0,
                 }}
               />
