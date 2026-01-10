@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
-import { Card, Flex, Text, Paper, ScrollArea, ActionIcon } from "@mantine/core";
+import { Card, Flex, Text, Paper, ActionIcon, Tooltip } from "@mantine/core";
 import { IconX } from "@tabler/icons-react";
+import { List, RowComponentProps } from "react-window";
 import type { CharacterFilters } from "../../../hooks";
 import type { MercTypeStats } from "../../../types";
+import styles from "../VirtualList.module.css";
 
 // Map API descriptions to display names (Act + Aura)
 const MERC_TYPE_DISPLAY: Record<string, string> = {
@@ -32,6 +34,11 @@ const MERC_TYPE_DISPLAY: Record<string, string> = {
 
 const getMercTypeDisplay = (rawType: string): string => {
   return MERC_TYPE_DISPLAY[rawType] || rawType;
+};
+
+const getAuraIconName = (displayName: string): string => {
+  const parts = displayName.split(" ");
+  return parts.slice(1).join("_");
 };
 
 interface Props {
@@ -80,6 +87,94 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
 
   const hasMercTypes = filteredMercTypes.length > 0;
 
+  const ROW_HEIGHT = 35;
+  const MAX_HEIGHT = 380;
+  const listHeight = Math.min(filteredMercTypes.length * ROW_HEIGHT, MAX_HEIGHT);
+  const needsScroll = filteredMercTypes.length * ROW_HEIGHT > MAX_HEIGHT;
+
+  type MercRowData = { rawName: string; displayName: string; percentage: number; isSelected: boolean };
+
+  const MercRow = ({ index, mercTypes, style }: RowComponentProps<{ mercTypes: MercRowData[] }>) => {
+    const { rawName, displayName, percentage, isSelected } = mercTypes[index];
+    const auraIconName = getAuraIconName(displayName);
+    return (
+      <div style={style}>
+      <Paper
+        key={rawName}
+        withBorder
+        radius={0}
+        p="5"
+        style={{
+          cursor: "pointer",
+          borderLeft: "none",
+          borderRight: "none",
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
+        }}
+        variant="hover"
+        onClick={(e) => {
+          const backgroundBar = e.currentTarget.querySelector(
+            'div[style*="position: absolute"]'
+          ) as HTMLElement | null;
+          if (backgroundBar) {
+            backgroundBar.style.width = "0%";
+          }
+          handleMercTypeSelect(rawName);
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: `${percentage}%`,
+            backgroundColor: isSelected
+              ? "rgba(0, 255, 0, 0.2)"
+              : "rgba(6, 182, 212, 0.35)",
+            zIndex: 0,
+          }}
+        />
+        <Tooltip label={displayName} position="right" openDelay={500} withArrow>
+          <Flex
+            justify="space-between"
+            align="center"
+            style={{ position: "relative", zIndex: 1 }}
+          >
+            <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
+              <img
+                src={`/icons/${auraIconName}.png`}
+                alt={auraIconName}
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  flexShrink: 0,
+                }}
+              />
+              <Text lineClamp={1}>{displayName}</Text>
+            </Flex>
+            {isSelected ? (
+              <ActionIcon
+                size="xs"
+                variant="default"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMercTypeSelect(rawName);
+                }}
+              >
+                <IconX size={14} />
+              </ActionIcon>
+            ) : (
+              <Text>{percentage.toFixed(1)}%</Text>
+            )}
+          </Flex>
+        </Tooltip>
+      </Paper>
+      </div>
+    );
+  };
+
   return (
     <Card
       p={0}
@@ -97,69 +192,14 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
       </div>
 
       {hasMercTypes ? (
-        <ScrollArea style={{ flex: 1 }}>
-          {filteredMercTypes.map(({ rawName, displayName, percentage, isSelected }) => (
-            <Paper
-              key={rawName}
-              withBorder
-              radius={0}
-              p="5"
-              style={{
-                cursor: "pointer",
-                borderLeft: "none",
-                borderRight: "none",
-                position: "relative",
-                overflow: "hidden",
-                backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
-              }}
-              variant="hover"
-              onClick={(e) => {
-                const backgroundBar = e.currentTarget.querySelector(
-                  'div[style*="position: absolute"]'
-                ) as HTMLElement | null;
-                if (backgroundBar) {
-                  backgroundBar.style.width = "0%";
-                }
-                handleMercTypeSelect(rawName);
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  width: `${percentage}%`,
-                  backgroundColor: isSelected
-                    ? "rgba(0, 255, 0, 0.2)"
-                    : "rgba(6, 182, 212, 0.35)",
-                  zIndex: 0,
-                }}
-              />
-              <Flex
-                justify="space-between"
-                align="center"
-                style={{ position: "relative", zIndex: 1 }}
-              >
-                <Text>{displayName}</Text>
-                {isSelected ? (
-                  <ActionIcon
-                    size="xs"
-                    variant="default"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMercTypeSelect(rawName);
-                    }}
-                  >
-                    <IconX size={14} />
-                  </ActionIcon>
-                ) : (
-                  <Text>{percentage.toFixed(1)}%</Text>
-                )}
-              </Flex>
-            </Paper>
-          ))}
-        </ScrollArea>
+        <List
+          rowComponent={MercRow}
+          rowCount={filteredMercTypes.length}
+          rowHeight={ROW_HEIGHT}
+          rowProps={{ mercTypes: filteredMercTypes }}
+          style={{ height: listHeight, overflowY: needsScroll ? 'auto' : 'hidden' }}
+          className={styles.virtualList}
+        />
       ) : (
         <></>
       )}

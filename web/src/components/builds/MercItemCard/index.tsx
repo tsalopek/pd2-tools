@@ -4,13 +4,14 @@ import {
   Flex,
   Text,
   Paper,
-  ScrollArea,
   Tooltip,
   ActionIcon,
 } from "@mantine/core";
 import { IconX } from "@tabler/icons-react";
+import { List, RowComponentProps } from "react-window";
 import type { CharacterFilters } from "../../../hooks";
 import type { ItemUsageStats } from "../../../types";
+import styles from "../VirtualList.module.css";
 
 interface Props {
   data: {
@@ -81,19 +82,18 @@ export default function MercItemCard({ data, filters, updateFilters }: Props) {
   };
 
   const hasItems = itemPercentages.length > 0;
-  const needsScroll = itemPercentages.length > 8;
 
-  const ItemRow = ({
-    name,
-    percentage,
-    type,
-    isSelected,
-  }: {
-    name: string;
-    percentage: number;
-    type: string;
-    isSelected: boolean;
-  }) => (
+  const ROW_HEIGHT = 35;
+  const MAX_HEIGHT = 350;
+  const listHeight = Math.min(itemPercentages.length * ROW_HEIGHT, MAX_HEIGHT);
+  const needsScroll = itemPercentages.length * ROW_HEIGHT > MAX_HEIGHT;
+
+  type ItemRowData = { name: string; percentage: number; type: string; isSelected: boolean };
+
+  const ItemRow = ({ index, items, style }: RowComponentProps<{ items: ItemRowData[] }>) => {
+    const { name, percentage, type, isSelected } = items[index];
+    return (
+      <div style={style}>
     <Paper
       key={name}
       withBorder
@@ -132,7 +132,7 @@ export default function MercItemCard({ data, filters, updateFilters }: Props) {
           zIndex: 0,
         }}
       />
-      <Tooltip label={name} openDelay={500}>
+      <Tooltip label={name} position="right" openDelay={500} withArrow>
         <Flex
           justify="space-between"
           align="center"
@@ -156,7 +156,9 @@ export default function MercItemCard({ data, filters, updateFilters }: Props) {
         </Flex>
       </Tooltip>
     </Paper>
-  );
+    </div>
+    );
+  };
 
   return (
     <Card
@@ -174,40 +176,16 @@ export default function MercItemCard({ data, filters, updateFilters }: Props) {
         <Text fw={700}>MERC ITEMS</Text>
       </div>
 
-      {hasItems &&
-        (needsScroll ? (
-          <ScrollArea
-            style={{ flex: 1 }}
-            offsetScrollbars={"y"}
-            scrollbarSize={8}
-            type={"auto"}
-            h={1000}
-          >
-            <div>
-              {itemPercentages.map((item) => (
-                <ItemRow
-                  key={item.name}
-                  name={item.name}
-                  percentage={item.percentage}
-                  type={item.type}
-                  isSelected={item.isSelected}
-                />
-              ))}
-            </div>
-          </ScrollArea>
-        ) : (
-          <div style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.15)' }}>
-            {itemPercentages.map((item) => (
-              <ItemRow
-                key={item.name}
-                name={item.name}
-                percentage={item.percentage}
-                type={item.type}
-                isSelected={item.isSelected}
-              />
-            ))}
-          </div>
-        ))}
+      {hasItems && (
+        <List
+          rowComponent={ItemRow}
+          rowCount={itemPercentages.length}
+          rowHeight={ROW_HEIGHT}
+          rowProps={{ items: itemPercentages }}
+          style={{ height: listHeight, overflowY: needsScroll ? 'auto' : 'hidden' }}
+          className={styles.virtualList}
+        />
+      )}
     </Card>
   );
 }
