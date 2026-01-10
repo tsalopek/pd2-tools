@@ -203,6 +203,8 @@ router.get(
         classes,
         items,
         skills,
+        mercTypes,
+        mercItems,
         season,
       } = req.query;
 
@@ -243,6 +245,14 @@ router.get(
         } catch {
           // Invalid skills format, ignore
         }
+      }
+
+      if (mercTypes) {
+        filter.requiredMercTypes = (mercTypes as string).split(",");
+      }
+
+      if (mercItems) {
+        filter.requiredMercItems = (mercItems as string).split(",");
       }
 
       if (season) {
@@ -281,6 +291,8 @@ router.get(
         classes,
         items,
         skills,
+        mercTypes,
+        mercItems,
         season,
       } = req.query;
 
@@ -321,6 +333,14 @@ router.get(
         } catch {
           // Invalid skills format, ignore
         }
+      }
+
+      if (mercTypes) {
+        filter.requiredMercTypes = (mercTypes as string).split(",");
+      }
+
+      if (mercItems) {
+        filter.requiredMercItems = (mercItems as string).split(",");
       }
 
       if (season) {

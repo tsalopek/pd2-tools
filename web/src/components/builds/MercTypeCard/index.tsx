@@ -52,7 +52,7 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
       style={{
         display: "flex",
         flexDirection: "column",
-        maxHeight: "400px",
+        maxHeight: "425px",
         height: hasMercTypes ? undefined : "auto",
       }}
     >

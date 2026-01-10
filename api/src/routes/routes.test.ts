@@ -427,6 +427,26 @@ describe("API Routes", () => {
         });
       });
 
+      it("should apply mercenary filters", async () => {
+        (characterDB.analyzeItemUsage as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/stats/item-usage")
+          .query({
+            gameMode: "softcore",
+            mercTypes: "Offensive Auras",
+            mercItems: "Colossus Voulge,Vampire Gaze",
+            season: 12,
+          })
+          .expect(200);
+
+        expect(characterDB.analyzeItemUsage).toHaveBeenCalledWith("softcore", {
+          requiredMercTypes: ["Offensive Auras"],
+          requiredMercItems: ["Colossus Voulge", "Vampire Gaze"],
+          season: 12,
+        });
+      });
+
       it("should handle errors", async () => {
         (characterDB.analyzeItemUsage as jest.Mock).mockRejectedValue(
           new Error("Error")
@@ -480,6 +500,26 @@ describe("API Routes", () => {
           levelRange: { min: 85 },
           requiredClasses: ["Paladin", "Sorceress"],
           season: 12,
+        });
+      });
+
+      it("should apply mercenary filters", async () => {
+        (characterDB.analyzeSkillUsage as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/stats/skill-usage")
+          .query({
+            gameMode: "hardcore",
+            mercTypes: "Cold Spells,Fire Spells",
+            mercItems: "Vampire Gaze",
+            season: 11,
+          })
+          .expect(200);
+
+        expect(characterDB.analyzeSkillUsage).toHaveBeenCalledWith("hardcore", {
+          requiredMercTypes: ["Cold Spells", "Fire Spells"],
+          requiredMercItems: ["Vampire Gaze"],
+          season: 11,
         });
       });
 
