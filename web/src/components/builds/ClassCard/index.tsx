@@ -139,7 +139,9 @@ export default function ClassCard({
                   right: 0,
                   bottom: 0,
                   width: `${percentage}%`,
-                  backgroundColor: "rgba(59, 130, 246, 0.35)",
+                  backgroundColor: isSelected
+                    ? "rgba(0, 255, 0, 0.2)"
+                    : "rgba(59, 130, 246, 0.35)",
                   zIndex: 0,
                 }}
               />
