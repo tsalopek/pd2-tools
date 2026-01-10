@@ -605,7 +605,7 @@ describe("API Routes", () => {
           .expect(500);
 
         expect(response.body).toEqual({
-          error: { message: "Failed to analyze mercenary type usage" },
+          error: { message: "Failed to analyze merc type usage" },
         });
       });
     });
@@ -679,7 +679,7 @@ describe("API Routes", () => {
           .expect(500);
 
         expect(response.body).toEqual({
-          error: { message: "Failed to analyze mercenary item usage" },
+          error: { message: "Failed to analyze merc item usage" },
         });
       });
     });

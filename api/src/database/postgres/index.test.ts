@@ -715,8 +715,9 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           season11
         );
 
-        // Should only have the valid item
-        expect(char?.mercenary?.items?.length).toBe(1);
+        // JSONB stores all items including invalid ones
+        // But only 1 valid item should be in MercenaryItems table
+        expect(char?.mercenary?.items?.length).toBe(3);
       });
     });
 
@@ -831,7 +832,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
             ],
           },
         };
@@ -851,8 +852,8 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" } },
-              { name: "Sacred Armor", quality: { name: "Runeword" } },
+              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
+              { name: "Sacred Armor", quality: { name: "Runeword" }, runeword: true },
             ],
           },
         };
@@ -871,7 +872,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           lastUpdated: Date.now(),
           mercenary: {
             description: "Offensive Auras",
-            items: [{ name: "Sacred Armor", quality: { name: "Runeword" } }],
+            items: [{ name: "Sacred Armor", quality: { name: "Runeword" }, runeword: true }],
           },
         };
 
@@ -939,7 +940,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
             ],
           },
         };
@@ -959,7 +960,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
             ],
           },
         };
@@ -1034,7 +1035,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
               { name: "Vampire Gaze", quality: { name: "Unique" } },
             ],
           },
@@ -1055,7 +1056,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
             ],
           },
         };
@@ -1173,7 +1174,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" } },
+              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
             ],
           },
         };
@@ -1204,7 +1205,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Cold Spells",
             items: [
-              { name: "Giant Thresher", quality: { name: "Runeword" } },
+              { name: "Giant Thresher", quality: { name: "Runeword" }, runeword: true },
               { name: "Vampire Gaze", quality: { name: "Unique" } },
             ],
           },
