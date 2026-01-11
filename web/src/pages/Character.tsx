@@ -137,13 +137,13 @@ export default function Character() {
                 characterName={displayData.character.name}
                 className={displayData.character.class.name}
                 level={displayData.character.level}
-                lastUpdated={displayData?.lastUpdated}
+                lastUpdated={charQuery.data?.lastUpdated}
                 isMobile={isMobile}
                 prevCharacter={prevCharacter}
                 nextCharacter={nextCharacter}
-                accountName={displayData.accountName}
-                isHardcore={displayData.character.status?.is_hardcore}
-                season={displayData.character.season}
+                accountName={charQuery.data?.accountName}
+                isHardcore={charQuery.data?.character?.status?.is_hardcore}
+                season={charQuery.data?.character?.season}
                 snapshots={snapshotsListQuery.data?.snapshots}
                 selectedSnapshot={selectedSnapshot}
                 onSnapshotChange={setSelectedSnapshot}

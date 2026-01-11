@@ -1,5 +1,13 @@
-import { Card, Text } from "@mantine/core";
-import { LineChart } from "@mantine/charts";
+import { Card, Text, Box, useMantineTheme } from "@mantine/core";
+import {
+  ResponsiveContainer,
+  LineChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Line,
+} from "recharts";
 import type { CharacterSnapshotListItem } from "../../types";
 import {
   calculatePercentToNextLevel,
@@ -19,6 +27,7 @@ export function LevelProgressChart({
   currentExperience,
   lastUpdated,
 }: LevelProgressChartProps) {
+  const theme = useMantineTheme();
   // Prepare chart data: combine snapshots with current data
   const chartData = [
     // Historical snapshots (oldest to newest)
@@ -66,7 +75,7 @@ export function LevelProgressChart({
   // If only one data point, show a message instead of a chart
   if (uniqueData.length === 1) {
     return (
-      <Card radius="md" shadow="md" padding="md" mt="md">
+      <Card radius="md" shadow="md" padding="md">
         <Card.Section
           style={{
             backgroundColor: "rgb(44, 45, 50)",
@@ -78,7 +87,7 @@ export function LevelProgressChart({
           <Text fw={500}>Level History</Text>
         </Card.Section>
         <Text c="dimmed" size="sm" ta="center" py="xl">
-          No historical data yet. Level progression will appear here as your
+          No historical data yet. Level progression will appear here as this
           character is updated over time.
         </Text>
       </Card>
@@ -86,7 +95,7 @@ export function LevelProgressChart({
   }
 
   return (
-    <Card radius="md" shadow="md" padding="md" mt="md">
+    <Card radius="md" shadow="md" padding="md">
       <Card.Section
         style={{
           backgroundColor: "rgb(44, 45, 50)",
@@ -98,59 +107,99 @@ export function LevelProgressChart({
         <Text fw={500}>Level History</Text>
       </Card.Section>
 
-      <LineChart
+      <Box
         h={300}
-        data={uniqueData}
-        dataKey="date"
-        series={[{ name: "Level", color: "blue" }]}
-        curveType="linear"
-        connectNulls
-        gridAxis="xy"
-        withLegend={false}
-        yAxisProps={{
-          domain: [
-            Math.max(1, Math.min(...uniqueData.map((d) => d.Level)) - 5),
-            Math.min(99, Math.max(...uniqueData.map((d) => d.Level)) + 2),
-          ],
+        style={{
+          minWidth: 0,
+          overflowX: "auto",
+          overflowY: "hidden",
+          width: "100%",
         }}
-        tooltipProps={{
-          content: ({ label, payload }) => {
-            if (!payload || payload.length === 0) return null;
-            const data = payload[0].payload;
-            const percent = calculatePercentToNextLevel(
-              data.Level,
-              data.experience
-            );
-
-            return (
-              <div
-                style={{
-                  backgroundColor: "rgba(0, 0, 0, 0.9)",
-                  border: "1px solid #444",
-                  borderRadius: "4px",
-                  padding: "12px",
+      >
+        <div style={{ minWidth: 400 }}>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart
+              data={uniqueData}
+              margin={{
+                top: 5,
+                right: 30,
+                left: 20,
+                bottom: 25,
+              }}
+              isAnimationActive={false}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={theme.colors.dark[4]}
+              />
+              <XAxis
+                dataKey="date"
+                stroke={theme.colors.gray[6]}
+                textAnchor="middle"
+              />
+              <YAxis
+                stroke={theme.colors.gray[6]}
+                domain={[
+                  Math.max(1, Math.min(...uniqueData.map((d) => d.Level)) - 5),
+                  Math.min(99, Math.max(...uniqueData.map((d) => d.Level)) + 2),
+                ]}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: theme.colors.dark[7],
+                  border: `1px solid ${theme.colors.dark[4]}`,
                 }}
-              >
-                <Text size="sm" fw={500} c="white">
-                  {data.fullTimestamp || label}
-                </Text>
-                <Text size="sm" c="dimmed" mt={4}>
-                  Level: {data.Level}
-                  {data.Level === 99 && " (Max)"}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Experience: {formatExperience(data.experience)}
-                </Text>
-                {percent !== null && (
-                  <Text size="sm" c="blue" mt={4}>
-                    Progress to {data.Level + 1}: {percent.toFixed(1)}%
-                  </Text>
-                )}
-              </div>
-            );
-          },
-        }}
-      />
+                labelStyle={{ color: theme.colors.gray[5] }}
+                content={({ payload }) => {
+                  if (!payload || payload.length === 0) return null;
+                  const data = payload[0].payload;
+                  const percent = calculatePercentToNextLevel(
+                    data.Level,
+                    data.experience
+                  );
+
+                  return (
+                    <div
+                      style={{
+                        backgroundColor: theme.colors.dark[7],
+                        border: `1px solid ${theme.colors.dark[4]}`,
+                        borderRadius: "4px",
+                        padding: "12px",
+                      }}
+                    >
+                      <Text size="sm" fw={500} c="white">
+                        {data.fullTimestamp}
+                      </Text>
+                      <Text size="sm" c="blue" mt={4}>
+                        Level: {data.Level}
+                        {data.Level === 99 && " (Max)"}
+                      </Text>
+                      {data.experience >= 0 && <Text size="sm">
+                        Experience: {formatExperience(data.experience)}
+                      </Text>}
+                      {percent !== null && data.experience >= 0 && (
+                        <Text size="sm">
+                          Progress to {data.Level + 1}: {percent.toFixed(1)}%
+                        </Text>
+                      )}
+                    </div>
+                  );
+                }}
+                animationDuration={0}
+              />
+              <Line
+                type="monotone"
+                dataKey="Level"
+                stroke={theme.colors.blue[5]}
+                strokeWidth={2}
+                dot={false}
+                name="Level"
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Box>
     </Card>
   );
 }
