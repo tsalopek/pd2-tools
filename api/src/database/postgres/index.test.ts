@@ -1588,14 +1588,17 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
 
     it("should create multiple snapshots over time", async () => {
       const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char1.lastUpdated = 1000000000;
       await db.ingestCharacter(char1, gameModeSC, season11);
 
       const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       char2.character.experience = 700000000;
+      char2.lastUpdated = 2000000000;
       await db.ingestCharacter(char2, gameModeSC, season11);
 
       const char3 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       char3.character.experience = 800000000;
+      char3.lastUpdated = 3000000000;
       await db.ingestCharacter(char3, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
@@ -1655,19 +1658,17 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
 
     it("should return snapshots in descending timestamp order", async () => {
       const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char1.lastUpdated = 1000000000;
       await db.ingestCharacter(char1, gameModeSC, season11);
-
-      // Wait 1ms to ensure different timestamp
-      await new Promise((resolve) => setTimeout(resolve, 1));
 
       const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       char2.character.experience = 700000000;
+      char2.lastUpdated = 2000000000;
       await db.ingestCharacter(char2, gameModeSC, season11);
-
-      await new Promise((resolve) => setTimeout(resolve, 1));
 
       const char3 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       char3.character.experience = 800000000;
+      char3.lastUpdated = 3000000000;
       await db.ingestCharacter(char3, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
