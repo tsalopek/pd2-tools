@@ -1,4 +1,14 @@
-import { Button, Card, Image, Text, Title, Badge, Group, Anchor, Select } from "@mantine/core";
+import {
+  Button,
+  Card,
+  Image,
+  Text,
+  Title,
+  Badge,
+  Group,
+  Anchor,
+  Select,
+} from "@mantine/core";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import RelativeTime from "@yaireo/relative-time";
@@ -51,7 +61,10 @@ export function CharacterHeader({
       const newIndex = parsed.list.indexOf(targetName);
       if (newIndex !== -1) {
         parsed.currentIndex = newIndex;
-        sessionStorage.setItem(`characterNavContext_${navId}`, JSON.stringify(parsed));
+        sessionStorage.setItem(
+          `characterNavContext_${navId}`,
+          JSON.stringify(parsed)
+        );
       }
     }
   };
@@ -73,7 +86,13 @@ export function CharacterHeader({
           </Button>
         </a>
 
-        <div style={{ display: "flex", gap: "8px", marginLeft: isMobile ? "0" : "16px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            marginLeft: isMobile ? "0" : "16px",
+          }}
+        >
           <Button
             component="a"
             href={prevCharacter ? getCharacterUrl(prevCharacter) : undefined}

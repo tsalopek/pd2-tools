@@ -1,12 +1,5 @@
 import React, { useMemo } from "react";
-import {
-  Card,
-  Flex,
-  Text,
-  Paper,
-  Tooltip,
-  ActionIcon,
-} from "@mantine/core";
+import { Card, Flex, Text, Paper, Tooltip, ActionIcon } from "@mantine/core";
 import { IconInfoCircle, IconX } from "@tabler/icons-react";
 import { List, RowComponentProps } from "react-window";
 import type { CharacterFilters, SkillRequirement } from "../../../../hooks";
@@ -81,85 +74,89 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
 
   type SkillRowData = { name: string; percentage: number; isSelected: boolean };
 
-  const SkillRow = ({ index, skills, style }: RowComponentProps<{ skills: SkillRowData[] }>) => {
+  const SkillRow = ({
+    index,
+    skills,
+    style,
+  }: RowComponentProps<{ skills: SkillRowData[] }>) => {
     const { name, percentage, isSelected } = skills[index];
     return (
       <div style={style}>
-    <Paper
-      key={name}
-      withBorder
-      radius={0}
-      p="5"
-      style={{
-        cursor: "pointer",
-        borderLeft: "none",
-        borderRight: "none",
-        borderBottom: "none",
-        position: "relative",
-        overflow: "hidden",
-        backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
-      }}
-      variant="hover"
-      onClick={(e) => {
-        const backgroundBar = e.currentTarget.querySelector(
-          'div[style*="position: absolute"]'
-        ) as HTMLElement | null;
-        if (backgroundBar) {
-          backgroundBar.style.width = "0%";
-        }
-        handleSkillSelect(name);
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: `${percentage}%`,
-          backgroundColor: isSelected
-            ? "rgba(0, 255, 0, 0.2)"
-            : "rgba(168, 85, 247, 0.35)",
-          zIndex: 0,
-        }}
-      />
-      <Tooltip label={name} position="right" openDelay={500} withArrow>
-        <Flex
-          justify="space-between"
-          align="center"
-          style={{ position: "relative", zIndex: 1 }}
+        <Paper
+          key={name}
+          withBorder
+          radius={0}
+          p="5"
+          style={{
+            cursor: "pointer",
+            borderLeft: "none",
+            borderRight: "none",
+            borderBottom: "none",
+            position: "relative",
+            overflow: "hidden",
+            backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
+          }}
+          variant="hover"
+          onClick={(e) => {
+            const backgroundBar = e.currentTarget.querySelector(
+              'div[style*="position: absolute"]'
+            ) as HTMLElement | null;
+            if (backgroundBar) {
+              backgroundBar.style.width = "0%";
+            }
+            handleSkillSelect(name);
+          }}
         >
-          <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
-            <img
-              src={`/icons/${name.replaceAll(" ", "_")}.png`}
-              alt={name}
-              style={{
-                width: "20px",
-                height: "20px",
-                flexShrink: 0,
-                objectFit: "contain",
-              }}
-            />
-            <Text lineClamp={1}>{name}</Text>
-          </Flex>
-          {isSelected ? (
-            <ActionIcon
-              size="xs"
-              variant="default"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSkillSelect(name);
-              }}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: `${percentage}%`,
+              backgroundColor: isSelected
+                ? "rgba(0, 255, 0, 0.2)"
+                : "rgba(168, 85, 247, 0.35)",
+              zIndex: 0,
+            }}
+          />
+          <Tooltip label={name} position="right" openDelay={500} withArrow>
+            <Flex
+              justify="space-between"
+              align="center"
+              style={{ position: "relative", zIndex: 1 }}
             >
-              <IconX size={14} />
-            </ActionIcon>
-          ) : (
-            <Text>{percentage.toFixed(1)}%</Text>
-          )}
-        </Flex>
-      </Tooltip>
-    </Paper>
-    </div>
+              <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
+                <img
+                  src={`/icons/${name.replaceAll(" ", "_")}.png`}
+                  alt={name}
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    flexShrink: 0,
+                    objectFit: "contain",
+                  }}
+                />
+                <Text lineClamp={1}>{name}</Text>
+              </Flex>
+              {isSelected ? (
+                <ActionIcon
+                  size="xs"
+                  variant="default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSkillSelect(name);
+                  }}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              ) : (
+                <Text>{percentage.toFixed(1)}%</Text>
+              )}
+            </Flex>
+          </Tooltip>
+        </Paper>
+      </div>
     );
   };
 
@@ -172,7 +169,7 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
         flexDirection: "column",
         maxHeight: "400px",
         height: hasSkills ? undefined : "auto",
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)",
       }}
     >
       <div
@@ -200,7 +197,11 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
           rowCount={skillPercentages.length}
           rowHeight={ROW_HEIGHT}
           rowProps={{ skills: skillPercentages }}
-          style={{ height: listHeight, backgroundColor: 'rgba(0, 0, 0, 0.15)', overflowY: needsScroll ? 'auto' : 'hidden' }}
+          style={{
+            height: listHeight,
+            backgroundColor: "rgba(0, 0, 0, 0.15)",
+            overflowY: needsScroll ? "auto" : "hidden",
+          }}
           className={styles.virtualList}
         />
       )}

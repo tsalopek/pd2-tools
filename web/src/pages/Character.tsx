@@ -48,7 +48,8 @@ export default function Character() {
 
       return {
         prevCharacter: idx > 0 ? parsed.list[idx - 1] : null,
-        nextCharacter: idx < parsed.list.length - 1 ? parsed.list[idx + 1] : null,
+        nextCharacter:
+          idx < parsed.list.length - 1 ? parsed.list[idx + 1] : null,
       };
     } catch {
       return { prevCharacter: null, nextCharacter: null };
@@ -124,7 +125,10 @@ export default function Character() {
       </Helmet>
 
       <Container my="md">
-        {charQuery.isPending || snapshotsListQuery.isPending || didError || !displayData ? (
+        {charQuery.isPending ||
+        snapshotsListQuery.isPending ||
+        didError ||
+        !displayData ? (
           <Skeleton height="100vh">a</Skeleton>
         ) : (
           <Grid>
