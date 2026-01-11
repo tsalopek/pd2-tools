@@ -12,6 +12,7 @@ import {
 import { IconChevronLeft, IconChevronRight, IconExternalLink } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import RelativeTime from "@yaireo/relative-time";
+import RefreshButton from "./RefreshButton";
 import type { CharacterHeaderProps } from "../../types";
 
 const relativeTime = new RelativeTime();
@@ -213,6 +214,9 @@ export function CharacterHeader({
                   textAlign: "right",
                   marginBottom: "4px",
                   marginRight: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
                 }}
               >
                 <Text size="xs">
@@ -221,6 +225,9 @@ export function CharacterHeader({
                     ? relativeTime.from(new Date(lastUpdated))
                     : "Unknown"}
                 </Text>
+                {!selectedSnapshot && (
+                  <RefreshButton characterName={characterName} />
+                )}
               </div>
             </>
           )}
