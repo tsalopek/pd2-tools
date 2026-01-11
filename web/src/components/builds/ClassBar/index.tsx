@@ -12,7 +12,6 @@ import {
   RangeSlider,
   Tooltip,
   Alert,
-  Grid,
 } from "@mantine/core";
 import { IconX, IconSettings, IconInfoCircle, IconUserPlus } from "@tabler/icons-react";
 import { useMediaQuery } from "@mantine/hooks";
@@ -113,12 +112,14 @@ function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [queuedAccountName, setQueuedAccountName] = useState<string | null>(null);
   const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setIsLoading(true);
     setQueuedAccountName(null);
     setEstimatedTime(null);
+    setSuccessMessage(null);
     setErrorMessage(null);
 
     try {
@@ -132,6 +133,7 @@ function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
 
       setQueuedAccountName(response.accountName);
       setEstimatedTime(timeString);
+      setSuccessMessage(response.message);
       setAccountName("");
     } catch (error: any) {
       setErrorMessage(error.data?.error || error.message || "Failed to queue account");
@@ -144,6 +146,7 @@ function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
     setAccountName("");
     setQueuedAccountName(null);
     setEstimatedTime(null);
+    setSuccessMessage(null);
     setErrorMessage(null);
     onClose();
   };
@@ -164,7 +167,7 @@ function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
           Enter an <strong>account name</strong> (not character name) to add it to pd2.tools. All ladder characters level 80+ on this account will be
           added to the website.
         </Text>
-        
+
         <TextInput
           label="Account Name (NOT character name)"
           placeholder="Enter account name"
@@ -174,10 +177,10 @@ function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
           mb="md"
         />
 
-        {queuedAccountName && estimatedTime && (
+        {queuedAccountName && estimatedTime && successMessage && (
           <Alert color="green" mb="md">
             <Text size="sm" mb="xs">
-              Account added to priority queue! Characters will be processed in approximately{" "}
+              {successMessage}. Characters will be processed in approximately{" "}
               <strong>{estimatedTime}</strong>.
             </Text>
             <Text size="sm">
