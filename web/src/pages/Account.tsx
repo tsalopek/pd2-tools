@@ -19,7 +19,7 @@ export default function Account() {
     queryKey: ["account", accountName],
     queryFn: async () => {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "https://api.pd2.tools"}/api/v1/characters/accounts/${accountName}`
+        `${import.meta.env.VITE_API_URL}/characters/accounts/${accountName}`
       );
       if (!response.ok) {
         throw new Error("Account not found");
