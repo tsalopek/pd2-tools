@@ -230,8 +230,7 @@ export default class CharacterDB_Postgres {
                 season INTEGER NOT NULL,
                 level INTEGER,
                 snapshot_timestamp BIGINT NOT NULL,
-                full_response_json JSONB NOT NULL,
-                FOREIGN KEY (character_db_id) REFERENCES Characters(character_db_id) ON DELETE CASCADE
+                full_response_json JSONB NOT NULL
             );
 
             -- Snapshot indexes
@@ -317,12 +316,23 @@ export default class CharacterDB_Postgres {
     if (gameModeId === null) return;
 
     if (season !== undefined) {
-      const query =
-        "DELETE FROM Characters WHERE game_mode_id = $1 AND season = $2";
-      await this.pool.query(query, [gameModeId, season]);
+      await this.pool.query(
+        "DELETE FROM CharacterSnapshots WHERE game_mode_id = $1 AND season = $2",
+        [gameModeId, season]
+      );
+      await this.pool.query(
+        "DELETE FROM Characters WHERE game_mode_id = $1 AND season = $2",
+        [gameModeId, season]
+      );
     } else {
-      const query = "DELETE FROM Characters WHERE game_mode_id = $1";
-      await this.pool.query(query, [gameModeId]);
+      await this.pool.query(
+        "DELETE FROM CharacterSnapshots WHERE game_mode_id = $1",
+        [gameModeId]
+      );
+      await this.pool.query(
+        "DELETE FROM Characters WHERE game_mode_id = $1",
+        [gameModeId]
+      );
     }
   }
 
@@ -439,8 +449,9 @@ export default class CharacterDB_Postgres {
            LIMIT 1`,
           [existingChar.character_db_id]
         );
-        const lastSnapshotTimestamp =
-          lastSnapshotResult.rows[0]?.snapshot_timestamp || null;
+        const lastSnapshotTimestamp = lastSnapshotResult.rows[0]
+          ? parseInt(lastSnapshotResult.rows[0].snapshot_timestamp, 10)
+          : null;
 
         // Check if we should create a snapshot
         if (
@@ -639,19 +650,25 @@ export default class CharacterDB_Postgres {
     const SNAPSHOT_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in ms
     const now = Date.now();
 
-    // Create snapshot if 24+ hours since last snapshot
-    if (
-      lastSnapshotTimestamp === null ||
-      now - lastSnapshotTimestamp >= SNAPSHOT_INTERVAL
-    ) {
-      return true;
-    }
-
-    // Check if character has gained experience
+    // Check if character has gained experience (leveling up)
     const hasChanged =
       existing.character.experience !== incoming.character?.experience;
 
-    return hasChanged;
+    // If changed, always create snapshot (frequent snapshots while leveling)
+    if (hasChanged) {
+      return true;
+    }
+
+    // If no change, check time-based snapshot (for level 99 characters)
+    // Use lastSnapshotTimestamp if exists, otherwise fall back to lastUpdated
+    const lastUpdateTime = lastSnapshotTimestamp || existing.lastUpdated || 0;
+
+    if (now - lastUpdateTime >= SNAPSHOT_INTERVAL) {
+      return true; // Daily snapshot even without exp change
+    }
+
+    // No change and within 24h window
+    return false;
   }
 
   /**
@@ -716,7 +733,11 @@ export default class CharacterDB_Postgres {
       [gameModeId, characterName, season]
     );
 
-    return rows;
+    return rows.map((row) => ({
+      ...row,
+      snapshot_timestamp: parseInt(row.snapshot_timestamp, 10),
+      experience: parseInt(row.experience, 10),
+    }));
   }
 
   /**
