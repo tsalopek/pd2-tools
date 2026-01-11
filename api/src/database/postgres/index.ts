@@ -692,7 +692,7 @@ export default class CharacterDB_Postgres {
         characterName,
         season,
         charData.character?.level || null,
-        Date.now(),
+        charData.lastUpdated || Date.now(),
         charData,
       ]
     );

@@ -27,7 +27,7 @@ export default function Character() {
   const [playerToggle, setPlayerToggle] = useState<PlayerToggle>("player");
   const [skillsView, setSkillsView] = useState<SkillsView>("text");
   const [didError, setDidError] = useState(false);
-  const [selectedSnapshot, setSelectedSnapshot] = useState<string | null>(null); // null = current/live data
+  const [selectedSnapshot, setSelectedSnapshot] = useState<string | null>(""); // empty string = current/live data
 
   // Get nav ID from URL params
   const navId = searchParams.get("nav");
