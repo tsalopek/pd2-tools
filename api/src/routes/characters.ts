@@ -203,6 +203,97 @@ router.get(
   }
 );
 
+// GET /api/characters/:name/snapshots - Get all snapshots for a character
+router.get(
+  "/:name/snapshots",
+  validateSeason,
+  autoCache(900),
+  async (req: Request, res: Response) => {
+    try {
+      const { name } = req.params;
+      const { gameMode = "softcore", season } = req.query;
+
+      const seasonNumber = season
+        ? parseInt(season as string, 10)
+        : config.currentSeason;
+
+      const snapshots = await characterDB.getCharacterSnapshots(
+        gameMode as string,
+        name,
+        seasonNumber
+      );
+
+      if (!snapshots || snapshots.length === 0) {
+        res.status(404).json({
+          error: { message: "No snapshots found for this character" },
+        });
+        return;
+      }
+
+      // Return lightweight list (no full_response_json, just metadata)
+      const snapshotList = snapshots.map((snapshot) => ({
+        snapshot_id: snapshot.snapshot_id,
+        snapshot_timestamp: snapshot.snapshot_timestamp,
+        level: snapshot.level,
+        experience: snapshot.experience,
+      }));
+
+      res.json({ snapshots: snapshotList, total: snapshots.length });
+    } catch (error: unknown) {
+      logger.error("Error fetching character snapshots", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({
+        error: { message: "Failed to fetch character snapshots" },
+      });
+    }
+  }
+);
+
+// GET /api/characters/:name/snapshots/:snapshotId - Get specific snapshot
+router.get(
+  "/:name/snapshots/:snapshotId",
+  autoCache(900),
+  async (req: Request, res: Response) => {
+    try {
+      const { snapshotId } = req.params;
+      const snapshotIdNumber = parseInt(snapshotId, 10);
+
+      if (isNaN(snapshotIdNumber)) {
+        res.status(400).json({
+          error: { message: "Invalid snapshot ID" },
+        });
+        return;
+      }
+
+      const snapshot = await characterDB.getCharacterSnapshot(snapshotIdNumber);
+
+      if (!snapshot) {
+        res.status(404).json({
+          error: { message: "Snapshot not found" },
+        });
+        return;
+      }
+
+      // Calculate realStats from items before returning
+      if (snapshot.items && snapshot.items.length > 0) {
+        // @ts-expect-error - snapshot structure is validated by DB
+        const statParser = new CharacterStatParser(snapshot);
+        snapshot.realStats = statParser.parseAndGetCharStats();
+      }
+
+      res.json(snapshot);
+    } catch (error: unknown) {
+      logger.error("Error fetching character snapshot", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({
+        error: { message: "Failed to fetch character snapshot" },
+      });
+    }
+  }
+);
+
 // GET /api/characters/stats/level-distribution - Get level distribution
 router.get(
   "/stats/level-distribution",
