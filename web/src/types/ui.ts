@@ -5,6 +5,7 @@ import type {
   RealStats,
   Skill,
   MercenaryInfo,
+  CharacterSnapshotListItem,
 } from "./character";
 import type { EconomyItem, PriceData } from "./economy";
 import type { SkillsView, PlayerToggle } from "./constants";
@@ -21,6 +22,9 @@ export interface CharacterHeaderProps {
   accountName?: string;
   isHardcore?: boolean;
   season?: number;
+  snapshots?: CharacterSnapshotListItem[];
+  selectedSnapshot: string | null;
+  onSnapshotChange: (value: string | null) => void;
 }
 
 export interface EquipmentSectionProps {

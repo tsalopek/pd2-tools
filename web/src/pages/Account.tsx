@@ -1,6 +1,17 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Container, Title, Text, Stack, Card, Group, Skeleton, Tooltip, Badge, SegmentedControl } from "@mantine/core";
+import {
+  Container,
+  Title,
+  Text,
+  Stack,
+  Card,
+  Group,
+  Skeleton,
+  Tooltip,
+  Badge,
+  SegmentedControl,
+} from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { useMediaQuery } from "@mantine/hooks";
 import { Helmet } from "react-helmet";
@@ -38,8 +49,12 @@ export default function Account() {
     }
 
     const chars = accountQuery.data.characters;
-    const hcCount = chars.filter((c) => c.character?.status?.is_hardcore).length;
-    const scCount = chars.filter((c) => !c.character?.status?.is_hardcore).length;
+    const hcCount = chars.filter(
+      (c) => c.character?.status?.is_hardcore
+    ).length;
+    const scCount = chars.filter(
+      (c) => !c.character?.status?.is_hardcore
+    ).length;
 
     const filtered =
       modeFilter === "all"
@@ -82,10 +97,11 @@ export default function Account() {
             <Card withBorder padding="lg">
               <Text c="dimmed" ta="center">
                 No characters found for this account, or they haven't been
-                indexed yet. 
-                <br/><br/>
-                Characters are only indexed if they are level 80+
-                and on the ladder.
+                indexed yet.
+                <br />
+                <br />
+                Characters are only indexed if they are level 80+ and on the
+                ladder.
               </Text>
             </Card>
           ) : (
@@ -108,7 +124,10 @@ export default function Account() {
                 {filteredCharacters.map((char) => {
                   if (!char.character) return null;
 
-                  const topSkills = (char.realSkills || []).slice(0, 3) as Array<{
+                  const topSkills = (char.realSkills || []).slice(
+                    0,
+                    3
+                  ) as Array<{
                     skill: string;
                     level: number;
                   }>;
@@ -125,8 +144,7 @@ export default function Account() {
                         cursor: "pointer",
                         textDecoration: "none",
                         color: "inherit",
-                        borderColor: isHardcore ? "#fa5252" : undefined,
-                        borderWidth: isHardcore ? "2px" : "1px",
+                        borderWidth: "1px",
                       }}
                     >
                       <Stack gap="sm">
@@ -153,7 +171,11 @@ export default function Account() {
                                   </Badge>
                                 )}
                                 {char.character.season && (
-                                  <Badge color="grape" variant="filled" size="sm">
+                                  <Badge
+                                    color="grape"
+                                    variant="filled"
+                                    size="sm"
+                                  >
                                     S{char.character.season}
                                   </Badge>
                                 )}
@@ -165,7 +187,8 @@ export default function Account() {
                           </Group>
                           {!isMobile && char.lastUpdated && (
                             <Text size="xs" c="dimmed">
-                              Updated {relativeTime.from(new Date(char.lastUpdated))}
+                              Updated{" "}
+                              {relativeTime.from(new Date(char.lastUpdated))}
                             </Text>
                           )}
                         </Group>

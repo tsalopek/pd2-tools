@@ -1,5 +1,15 @@
-import { Button, Card, Image, Text, Title, Badge, Group, Anchor } from "@mantine/core";
-import { IconExternalLink, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import {
+  Button,
+  Card,
+  Image,
+  Text,
+  Title,
+  Badge,
+  Group,
+  Anchor,
+  Select,
+} from "@mantine/core";
+import { IconChevronLeft, IconChevronRight, IconExternalLink } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import RelativeTime from "@yaireo/relative-time";
 import type { CharacterHeaderProps } from "../../types";
@@ -17,6 +27,9 @@ export function CharacterHeader({
   accountName,
   isHardcore,
   season,
+  snapshots = [],
+  selectedSnapshot,
+  onSnapshotChange,
 }: CharacterHeaderProps) {
   const [searchParams] = useSearchParams();
 
@@ -48,7 +61,10 @@ export function CharacterHeader({
       const newIndex = parsed.list.indexOf(targetName);
       if (newIndex !== -1) {
         parsed.currentIndex = newIndex;
-        sessionStorage.setItem(`characterNavContext_${navId}`, JSON.stringify(parsed));
+        sessionStorage.setItem(
+          `characterNavContext_${navId}`,
+          JSON.stringify(parsed)
+        );
       }
     }
   };
@@ -70,7 +86,13 @@ export function CharacterHeader({
           </Button>
         </a>
 
-        <div style={{ display: "flex", gap: "8px", marginLeft: isMobile ? "0" : "16px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            marginLeft: isMobile ? "0" : "16px",
+          }}
+        >
           <Button
             component="a"
             href={prevCharacter ? getCharacterUrl(prevCharacter) : undefined}
@@ -96,20 +118,25 @@ export function CharacterHeader({
           </Button>
         </div>
 
-        <a
-          href={`https://projectdiablo2.com/character/${characterName}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{ textDecoration: "none", marginLeft: "auto" }}
-        >
-          <Button
-            variant="default"
+        {!isMobile && snapshots.length > 0 && (
+          <Select
+            placeholder="View snapshot"
+            value={selectedSnapshot}
+            onChange={onSnapshotChange}
+            data={[
+              {
+                value: "",
+                label: "Latest snapshot",
+              },
+              ...snapshots.map((snapshot) => ({
+                value: String(snapshot.snapshot_id),
+                label: `${new Date(snapshot.snapshot_timestamp).toLocaleString()} - Level ${snapshot.level}`,
+              })),
+            ]}
+            style={{ marginLeft: "auto", width: "250px" }}
             size="sm"
-            rightSection={<IconExternalLink size={16} />}
-          >
-            Visit PD2 Armory
-          </Button>
-        </a>
+          />
+        )}
       </div>
 
       <Card h="100px" w="100%" radius="md" shadow="md" p="md">
@@ -167,6 +194,16 @@ export function CharacterHeader({
                     Account: {accountName}
                   </Anchor>
                 )}
+                <Anchor
+                  href={`https://projectdiablo2.com/character/${characterName}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="xs"
+                  c="blue"
+                  style={{ display: "block", marginTop: "4px" }}
+                >
+                  PD2 Armory <IconExternalLink size={12} style={{ display: "inline", position: "relative", top: "2px" }} />
+                </Anchor>
               </div>
               <div
                 style={{

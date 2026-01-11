@@ -277,7 +277,8 @@ export default function PlayerTable({
     },
     mantinePaperProps: {
       style: {
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25)',
+        boxShadow:
+          "0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25)",
       },
     },
     mantineTableProps: {
@@ -312,14 +313,21 @@ export default function PlayerTable({
       // Build URL with nav ID and encoded filters
       const searchParams = new URLSearchParams();
       searchParams.set("nav", navId);
-      if (filters.gameMode !== "softcore") searchParams.set("gameMode", filters.gameMode);
-      if (filters.classFilter.length) searchParams.set("class", filters.classFilter.join(","));
-      if (filters.itemFilter.length) searchParams.set("items", filters.itemFilter.join(","));
-      if (filters.skillFilter.length) searchParams.set("skills", JSON.stringify(filters.skillFilter));
-      if (filters.mercTypeFilter.length) searchParams.set("mercTypes", filters.mercTypeFilter.join(","));
-      if (filters.mercItemFilter.length) searchParams.set("mercItems", filters.mercItemFilter.join(","));
+      if (filters.gameMode !== "softcore")
+        searchParams.set("gameMode", filters.gameMode);
+      if (filters.classFilter.length)
+        searchParams.set("class", filters.classFilter.join(","));
+      if (filters.itemFilter.length)
+        searchParams.set("items", filters.itemFilter.join(","));
+      if (filters.skillFilter.length)
+        searchParams.set("skills", JSON.stringify(filters.skillFilter));
+      if (filters.mercTypeFilter.length)
+        searchParams.set("mercTypes", filters.mercTypeFilter.join(","));
+      if (filters.mercItemFilter.length)
+        searchParams.set("mercItems", filters.mercItemFilter.join(","));
       if (filters.searchQuery) searchParams.set("query", filters.searchQuery);
-      if (filters.season !== 12) searchParams.set("season", filters.season.toString());
+      if (filters.season !== 12)
+        searchParams.set("season", filters.season.toString());
 
       const href = `/builds/character/${row.original.name}?${searchParams.toString()}`;
 
@@ -334,9 +342,13 @@ export default function PlayerTable({
         },
         onClick: () => {
           // Cleanup old nav contexts (keep last 15)
-          const navKeys = Object.keys(sessionStorage).filter(k => k.startsWith("characterNavContext_"));
+          const navKeys = Object.keys(sessionStorage).filter((k) =>
+            k.startsWith("characterNavContext_")
+          );
           if (navKeys.length > 15) {
-            navKeys.slice(0, navKeys.length - 15).forEach(k => sessionStorage.removeItem(k));
+            navKeys
+              .slice(0, navKeys.length - 15)
+              .forEach((k) => sessionStorage.removeItem(k));
           }
 
           // Store navigation context keyed by nav ID

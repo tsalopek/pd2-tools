@@ -1,4 +1,4 @@
-import { Pool, PoolConfig } from "pg";
+import { Pool, PoolConfig, PoolClient } from "pg";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -9,6 +9,7 @@ export interface FullCharacterResponse {
     level: number;
     life: number;
     mana: number;
+    experience: number;
     class: { id: number; name: string };
     skills: Array<{ id: number; name: string; level: number }>;
     season?: number;
@@ -218,7 +219,23 @@ export default class CharacterDB_Postgres {
             CREATE INDEX IF NOT EXISTS idx_char_merc_covering ON CharacterMercenaries(character_db_id, description);
             CREATE INDEX IF NOT EXISTS idx_merc_items_char ON MercenaryItems(character_db_id);
             CREATE INDEX IF NOT EXISTS idx_merc_items_base ON MercenaryItems(base_item_id);
-            CREATE INDEX IF NOT EXISTS idx_merc_items_char_base ON MercenaryItems(character_db_id, base_item_id)
+            CREATE INDEX IF NOT EXISTS idx_merc_items_char_base ON MercenaryItems(character_db_id, base_item_id);
+
+            -- Character Snapshots table for historical tracking
+            CREATE TABLE IF NOT EXISTS CharacterSnapshots (
+                snapshot_id SERIAL PRIMARY KEY,
+                character_db_id INTEGER NOT NULL,
+                game_mode_id INTEGER NOT NULL,
+                api_character_name TEXT NOT NULL,
+                season INTEGER NOT NULL,
+                level INTEGER,
+                snapshot_timestamp BIGINT NOT NULL,
+                full_response_json JSONB NOT NULL
+            );
+
+            -- Snapshot indexes
+            CREATE INDEX IF NOT EXISTS idx_snapshots_char_time ON CharacterSnapshots(character_db_id, snapshot_timestamp DESC);
+            CREATE INDEX IF NOT EXISTS idx_snapshots_lookup ON CharacterSnapshots(game_mode_id, api_character_name, season, snapshot_timestamp DESC)
         `);
   }
 
@@ -299,12 +316,23 @@ export default class CharacterDB_Postgres {
     if (gameModeId === null) return;
 
     if (season !== undefined) {
-      const query =
-        "DELETE FROM Characters WHERE game_mode_id = $1 AND season = $2";
-      await this.pool.query(query, [gameModeId, season]);
+      await this.pool.query(
+        "DELETE FROM CharacterSnapshots WHERE game_mode_id = $1 AND season = $2",
+        [gameModeId, season]
+      );
+      await this.pool.query(
+        "DELETE FROM Characters WHERE game_mode_id = $1 AND season = $2",
+        [gameModeId, season]
+      );
     } else {
-      const query = "DELETE FROM Characters WHERE game_mode_id = $1";
-      await this.pool.query(query, [gameModeId]);
+      await this.pool.query(
+        "DELETE FROM CharacterSnapshots WHERE game_mode_id = $1",
+        [gameModeId]
+      );
+      await this.pool.query(
+        "DELETE FROM Characters WHERE game_mode_id = $1",
+        [gameModeId]
+      );
     }
   }
 
@@ -400,6 +428,49 @@ export default class CharacterDB_Postgres {
             charData.character.class.name
           )
         : null;
+
+      // Snapshot logic: capture state before deletion
+      const existingCharResult = await client.query(
+        `SELECT character_db_id, full_response_json, season, account_name
+         FROM Characters
+         WHERE game_mode_id = $1 AND api_character_name = $2 AND season = $3`,
+        [gameModeId, charData.character.name, season]
+      );
+
+      if (existingCharResult.rows.length > 0) {
+        const existingChar = existingCharResult.rows[0];
+        const existingData = existingChar.full_response_json;
+
+        // Get last snapshot timestamp
+        const lastSnapshotResult = await client.query(
+          `SELECT snapshot_timestamp FROM CharacterSnapshots
+           WHERE character_db_id = $1
+           ORDER BY snapshot_timestamp DESC
+           LIMIT 1`,
+          [existingChar.character_db_id]
+        );
+        const lastSnapshotTimestamp = lastSnapshotResult.rows[0]
+          ? parseInt(lastSnapshotResult.rows[0].snapshot_timestamp, 10)
+          : null;
+
+        // Check if we should create a snapshot
+        if (
+          this.shouldCreateSnapshot(
+            existingData,
+            charData,
+            lastSnapshotTimestamp
+          )
+        ) {
+          await this.createSnapshot(
+            client,
+            existingChar.character_db_id,
+            gameModeId!,
+            charData.character.name,
+            season,
+            existingData
+          );
+        }
+      }
 
       await client.query(
         "DELETE FROM Characters WHERE game_mode_id = $1 AND api_character_name = $2 AND season = $3",
@@ -563,6 +634,124 @@ export default class CharacterDB_Postgres {
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Checks if a snapshot should be created based on change detection
+   */
+  private shouldCreateSnapshot(
+    existing: FullCharacterResponse | null,
+    incoming: FullCharacterResponse,
+    lastSnapshotTimestamp: number | null
+  ): boolean {
+    // No existing character means first ingestion - create snapshot
+    if (!existing || !existing.character) return true;
+
+    const SNAPSHOT_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in ms
+    const now = Date.now();
+
+    // Check if character has gained experience (leveling up)
+    const hasChanged =
+      existing.character.experience !== incoming.character?.experience;
+
+    // If changed, always create snapshot (frequent snapshots while leveling)
+    if (hasChanged) {
+      return true;
+    }
+
+    // If no change, check time-based snapshot (for level 99 characters)
+    // Use lastSnapshotTimestamp if exists, otherwise fall back to lastUpdated
+    const lastUpdateTime = lastSnapshotTimestamp || existing.lastUpdated || 0;
+
+    if (now - lastUpdateTime >= SNAPSHOT_INTERVAL) {
+      return true; // Daily snapshot even without exp change
+    }
+
+    // No change and within 24h window
+    return false;
+  }
+
+  /**
+   * Creates a snapshot of the current character state
+   */
+  private async createSnapshot(
+    client: PoolClient,
+    characterDbId: number,
+    gameModeId: number,
+    characterName: string,
+    season: number,
+    charData: FullCharacterResponse
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO CharacterSnapshots (
+        character_db_id, game_mode_id, api_character_name, season, level, snapshot_timestamp, full_response_json
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        characterDbId,
+        gameModeId,
+        characterName,
+        season,
+        charData.character?.level || null,
+        charData.lastUpdated || Date.now(),
+        charData,
+      ]
+    );
+  }
+
+  /**
+   * Gets all snapshots for a character, ordered by timestamp descending
+   */
+  public async getCharacterSnapshots(
+    gameModeName: string,
+    characterName: string,
+    season: number
+  ): Promise<
+    Array<{
+      snapshot_id: number;
+      snapshot_timestamp: number;
+      level: number;
+      experience: number;
+      full_response_json: FullCharacterResponse;
+    }>
+  > {
+    const gameModeId = await this.getOrInsertLookupId(
+      "GameModes",
+      "name",
+      gameModeName.toLowerCase()
+    );
+
+    const { rows } = await this.pool.query(
+      `SELECT
+        snapshot_id,
+        snapshot_timestamp,
+        level,
+        (full_response_json->'character'->>'experience')::bigint as experience,
+        full_response_json
+       FROM CharacterSnapshots
+       WHERE game_mode_id = $1 AND LOWER(api_character_name) = LOWER($2) AND season = $3
+       ORDER BY snapshot_timestamp DESC`,
+      [gameModeId, characterName, season]
+    );
+
+    return rows.map((row) => ({
+      ...row,
+      snapshot_timestamp: parseInt(row.snapshot_timestamp, 10),
+      experience: parseInt(row.experience, 10),
+    }));
+  }
+
+  /**
+   * Gets a specific snapshot by ID
+   */
+  public async getCharacterSnapshot(
+    snapshotId: number
+  ): Promise<FullCharacterResponse | null> {
+    const { rows } = await this.pool.query(
+      `SELECT full_response_json FROM CharacterSnapshots WHERE snapshot_id = $1`,
+      [snapshotId]
+    );
+
+    return rows[0]?.full_response_json || null;
   }
 
   private buildFilterCTE(

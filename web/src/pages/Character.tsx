@@ -10,6 +10,7 @@ import {
   EquipmentSection,
   SkillsSection,
   StatsSection,
+  LevelProgressChart,
 } from "../components/character";
 import type { PlayerToggle, SkillsView } from "../types";
 
@@ -26,6 +27,7 @@ export default function Character() {
   const [playerToggle, setPlayerToggle] = useState<PlayerToggle>("player");
   const [skillsView, setSkillsView] = useState<SkillsView>("text");
   const [didError, setDidError] = useState(false);
+  const [selectedSnapshot, setSelectedSnapshot] = useState<string | null>(""); // empty string = current/live data
 
   // Get nav ID from URL params
   const navId = searchParams.get("nav");
@@ -46,7 +48,8 @@ export default function Character() {
 
       return {
         prevCharacter: idx > 0 ? parsed.list[idx - 1] : null,
-        nextCharacter: idx < parsed.list.length - 1 ? parsed.list[idx + 1] : null,
+        nextCharacter:
+          idx < parsed.list.length - 1 ? parsed.list[idx + 1] : null,
       };
     } catch {
       return { prevCharacter: null, nextCharacter: null };
@@ -74,6 +77,43 @@ export default function Character() {
     enabled: !!characterName,
   });
 
+  // Fetch snapshot list for dropdown
+  const snapshotsListQuery = useQuery({
+    queryKey: ["character-snapshots", characterName],
+    queryFn: async () => {
+      try {
+        return await charactersAPI.getCharacterSnapshots(
+          characterName || "",
+          "softcore"
+        );
+      } catch {
+        // No snapshots yet, return empty array
+        return { snapshots: [], total: 0 };
+      }
+    },
+    retry: false,
+    enabled: !!characterName,
+  });
+
+  // Fetch specific snapshot when selected
+  const snapshotDataQuery = useQuery({
+    queryKey: ["character-snapshot", characterName, selectedSnapshot],
+    queryFn: async () => {
+      if (!selectedSnapshot) return null;
+      return await charactersAPI.getCharacterSnapshot(
+        characterName || "",
+        parseInt(selectedSnapshot, 10)
+      );
+    },
+    retry: false,
+    enabled: !!selectedSnapshot,
+  });
+
+  // Determine which data to show (current or snapshot)
+  const displayData = selectedSnapshot
+    ? snapshotDataQuery.data
+    : charQuery.data;
+
   return (
     <>
       <Helmet>
@@ -85,29 +125,35 @@ export default function Character() {
       </Helmet>
 
       <Container my="md">
-        {charQuery.isPending || didError ? (
+        {charQuery.isPending ||
+        snapshotsListQuery.isPending ||
+        didError ||
+        !displayData ? (
           <Skeleton height="100vh">a</Skeleton>
         ) : (
           <Grid>
             <Grid.Col span={12}>
               <CharacterHeader
-                characterName={charQuery.data.character.name}
-                className={charQuery.data.character.class.name}
-                level={charQuery.data.character.level}
+                characterName={displayData.character.name}
+                className={displayData.character.class.name}
+                level={displayData.character.level}
                 lastUpdated={charQuery.data?.lastUpdated}
                 isMobile={isMobile}
                 prevCharacter={prevCharacter}
                 nextCharacter={nextCharacter}
-                accountName={charQuery.data.accountName}
-                isHardcore={charQuery.data.character.status?.is_hardcore}
-                season={charQuery.data.character.season}
+                accountName={charQuery.data?.accountName}
+                isHardcore={charQuery.data?.character?.status?.is_hardcore}
+                season={charQuery.data?.character?.season}
+                snapshots={snapshotsListQuery.data?.snapshots}
+                selectedSnapshot={selectedSnapshot}
+                onSnapshotChange={setSelectedSnapshot}
               />
             </Grid.Col>
 
             <Grid.Col span={{ base: 12, sm: 8 }}>
               <EquipmentSection
-                playerItems={charQuery.data?.items}
-                mercenary={charQuery.data?.mercenary}
+                playerItems={displayData?.items}
+                mercenary={displayData?.mercenary}
                 playerToggle={playerToggle}
                 onPlayerToggleChange={setPlayerToggle}
               />
@@ -115,8 +161,8 @@ export default function Character() {
 
             <Grid.Col span={{ base: 12, sm: 4 }}>
               <SkillsSection
-                skills={charQuery.data.realSkills}
-                hasCta={charQuery.data.hasCta}
+                skills={displayData.realSkills}
+                hasCta={displayData.hasCta}
                 skillsView={skillsView}
                 onSkillsViewChange={setSkillsView}
               />
@@ -124,9 +170,18 @@ export default function Character() {
 
             <Grid.Col span={{ base: 12, sm: 12 }}>
               <StatsSection
-                attributes={charQuery.data.character.attributes}
-                stats={charQuery.data.character}
-                realStats={charQuery.data.realStats}
+                attributes={displayData.character.attributes}
+                stats={displayData.character}
+                realStats={displayData.realStats}
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, sm: 12 }}>
+              <LevelProgressChart
+                snapshots={snapshotsListQuery.data?.snapshots || []}
+                currentLevel={charQuery.data?.character?.level || 0}
+                currentExperience={charQuery.data?.character?.experience || 0}
+                lastUpdated={charQuery.data?.lastUpdated}
               />
             </Grid.Col>
           </Grid>
