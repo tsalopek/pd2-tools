@@ -525,8 +525,10 @@ router.get(
 
       if (classes) filter.requiredClasses = (classes as string).split(",");
       if (items) filter.requiredItems = (items as string).split(",");
-      if (mercTypes) filter.requiredMercTypes = (mercTypes as string).split(",");
-      if (mercItems) filter.requiredMercItems = (mercItems as string).split(",");
+      if (mercTypes)
+        filter.requiredMercTypes = (mercTypes as string).split(",");
+      if (mercItems)
+        filter.requiredMercItems = (mercItems as string).split(",");
 
       if (skills) {
         try {
@@ -600,8 +602,10 @@ router.get(
 
       if (classes) filter.requiredClasses = (classes as string).split(",");
       if (items) filter.requiredItems = (items as string).split(",");
-      if (mercTypes) filter.requiredMercTypes = (mercTypes as string).split(",");
-      if (mercItems) filter.requiredMercItems = (mercItems as string).split(",");
+      if (mercTypes)
+        filter.requiredMercTypes = (mercTypes as string).split(",");
+      if (mercItems)
+        filter.requiredMercItems = (mercItems as string).split(",");
 
       if (skills) {
         try {

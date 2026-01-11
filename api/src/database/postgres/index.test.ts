@@ -832,7 +832,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
             ],
           },
         };
@@ -852,8 +856,16 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
-              { name: "Sacred Armor", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
+              {
+                name: "Sacred Armor",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
             ],
           },
         };
@@ -872,7 +884,13 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           lastUpdated: Date.now(),
           mercenary: {
             description: "Offensive Auras",
-            items: [{ name: "Sacred Armor", quality: { name: "Runeword" }, runeword: true }],
+            items: [
+              {
+                name: "Sacred Armor",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
+            ],
           },
         };
 
@@ -940,7 +958,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
             ],
           },
         };
@@ -960,7 +982,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
             ],
           },
         };
@@ -1035,7 +1061,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
               { name: "Vampire Gaze", quality: { name: "Unique" } },
             ],
           },
@@ -1056,7 +1086,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
             ],
           },
         };
@@ -1174,7 +1208,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Offensive Auras",
             items: [
-              { name: "Colossus Voulge", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Colossus Voulge",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
             ],
           },
         };
@@ -1205,7 +1243,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
           mercenary: {
             description: "Cold Spells",
             items: [
-              { name: "Giant Thresher", quality: { name: "Runeword" }, runeword: true },
+              {
+                name: "Giant Thresher",
+                quality: { name: "Runeword" },
+                runeword: true,
+              },
               { name: "Vampire Gaze", quality: { name: "Unique" } },
             ],
           },
@@ -1227,12 +1269,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
   describe("Account Name Feature", () => {
     it("should ingest character with account name", async () => {
       const freshChar = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      await db.ingestCharacter(
-        freshChar,
-        gameModeSC,
-        season11,
-        "TestAccount"
-      );
+      await db.ingestCharacter(freshChar, gameModeSC, season11, "TestAccount");
       const char = await db.getCharacterByName(
         gameModeSC,
         freshChar.character.name,
@@ -1365,12 +1402,8 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
 
       expect(s11Chars.length).toBe(1);
       expect(s12Chars.length).toBe(1);
-      expect(s11Chars[0].character!.name).toBe(
-        sampleChar1_Sorc.character.name
-      );
-      expect(s12Chars[0].character!.name).toBe(
-        sampleChar2_Pala.character.name
-      );
+      expect(s11Chars[0].character!.name).toBe(sampleChar1_Sorc.character.name);
+      expect(s12Chars[0].character!.name).toBe(sampleChar2_Pala.character.name);
     });
 
     it("should return all seasons when no season specified", async () => {
@@ -1656,9 +1689,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
       expect(s11Snapshots.length).toBeGreaterThan(0);
       expect(s12Snapshots.length).toBeGreaterThan(0);
       // Verify season isolation - snapshot IDs should be different
-      expect(s11Snapshots[0].snapshot_id).not.toBe(
-        s12Snapshots[0].snapshot_id
-      );
+      expect(s11Snapshots[0].snapshot_id).not.toBe(s12Snapshots[0].snapshot_id);
     });
 
     it("should cascade delete snapshots when character is deleted", async () => {

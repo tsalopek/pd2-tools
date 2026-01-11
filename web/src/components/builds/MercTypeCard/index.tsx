@@ -16,7 +16,7 @@ const MERC_TYPE_DISPLAY: Record<string, string> = {
   // Act 2 Desert Guards
   "Defensive Auras": "A2 Defiance",
   "Offensive Auras": "A2 Blessed Aim",
-  "Combat": "A2 Thorns",
+  Combat: "A2 Thorns",
 
   // Act 3 Iron Wolves
   "Fire Spells": "A3 Cleansing",
@@ -24,12 +24,12 @@ const MERC_TYPE_DISPLAY: Record<string, string> = {
   "Lightning Spells": "A3 Holy Shock",
 
   // Act 4 Ascendants
-  "Dark": "A4 Amplify Damage",
-  "Light": "A4 Sanctuary",
+  Dark: "A4 Amplify Damage",
+  Light: "A4 Sanctuary",
 
   // Act 5 Barbarians
   "Might Merc": "A5 Might",
-  "Warcries": "A5 Battle Orders",
+  Warcries: "A5 Battle Orders",
 };
 
 const getMercTypeDisplay = (rawType: string): string => {
@@ -69,9 +69,14 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
       .filter((mercType) => {
         if (mercType.pct === 0) return false;
         if (searchQuery) {
-          const displayName = getMercTypeDisplay(mercType.mercType).toLowerCase();
+          const displayName = getMercTypeDisplay(
+            mercType.mercType
+          ).toLowerCase();
           const rawName = mercType.mercType.toLowerCase();
-          if (!displayName.includes(searchQuery) && !rawName.includes(searchQuery))
+          if (
+            !displayName.includes(searchQuery) &&
+            !rawName.includes(searchQuery)
+          )
             return false;
         }
         return true;
@@ -89,89 +94,106 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
 
   const ROW_HEIGHT = 35;
   const MAX_HEIGHT = 380;
-  const listHeight = Math.min(filteredMercTypes.length * ROW_HEIGHT, MAX_HEIGHT);
+  const listHeight = Math.min(
+    filteredMercTypes.length * ROW_HEIGHT,
+    MAX_HEIGHT
+  );
   const needsScroll = filteredMercTypes.length * ROW_HEIGHT > MAX_HEIGHT;
 
-  type MercRowData = { rawName: string; displayName: string; percentage: number; isSelected: boolean };
+  type MercRowData = {
+    rawName: string;
+    displayName: string;
+    percentage: number;
+    isSelected: boolean;
+  };
 
-  const MercRow = ({ index, mercTypes, style }: RowComponentProps<{ mercTypes: MercRowData[] }>) => {
+  const MercRow = ({
+    index,
+    mercTypes,
+    style,
+  }: RowComponentProps<{ mercTypes: MercRowData[] }>) => {
     const { rawName, displayName, percentage, isSelected } = mercTypes[index];
     const auraIconName = getAuraIconName(displayName);
     return (
       <div style={style}>
-      <Paper
-        key={rawName}
-        withBorder
-        radius={0}
-        p="5"
-        style={{
-          cursor: "pointer",
-          borderLeft: "none",
-          borderRight: "none",
-          position: "relative",
-          overflow: "hidden",
-          backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
-        }}
-        variant="hover"
-        onClick={(e) => {
-          const backgroundBar = e.currentTarget.querySelector(
-            'div[style*="position: absolute"]'
-          ) as HTMLElement | null;
-          if (backgroundBar) {
-            backgroundBar.style.width = "0%";
-          }
-          handleMercTypeSelect(rawName);
-        }}
-      >
-        <div
+        <Paper
+          key={rawName}
+          withBorder
+          radius={0}
+          p="5"
           style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: `${percentage}%`,
-            backgroundColor: isSelected
-              ? "rgba(0, 255, 0, 0.2)"
-              : "rgba(6, 182, 212, 0.35)",
-            zIndex: 0,
+            cursor: "pointer",
+            borderLeft: "none",
+            borderRight: "none",
+            position: "relative",
+            overflow: "hidden",
+            backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
           }}
-        />
-        <Tooltip label={displayName} position="right" openDelay={500} withArrow>
-          <Flex
-            justify="space-between"
-            align="center"
-            style={{ position: "relative", zIndex: 1 }}
+          variant="hover"
+          onClick={(e) => {
+            const backgroundBar = e.currentTarget.querySelector(
+              'div[style*="position: absolute"]'
+            ) as HTMLElement | null;
+            if (backgroundBar) {
+              backgroundBar.style.width = "0%";
+            }
+            handleMercTypeSelect(rawName);
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: `${percentage}%`,
+              backgroundColor: isSelected
+                ? "rgba(0, 255, 0, 0.2)"
+                : "rgba(6, 182, 212, 0.35)",
+              zIndex: 0,
+            }}
+          />
+          <Tooltip
+            label={displayName}
+            position="right"
+            openDelay={500}
+            withArrow
           >
-            <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
-              <img
-                src={`/icons/${auraIconName}.png`}
-                alt={auraIconName}
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  flexShrink: 0,
-                  objectFit: "contain",
-                }}
-              />
-              <Text lineClamp={1}>{displayName}</Text>
+            <Flex
+              justify="space-between"
+              align="center"
+              style={{ position: "relative", zIndex: 1 }}
+            >
+              <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
+                <img
+                  src={`/icons/${auraIconName}.png`}
+                  alt={auraIconName}
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    flexShrink: 0,
+                    objectFit: "contain",
+                  }}
+                />
+                <Text lineClamp={1}>{displayName}</Text>
+              </Flex>
+              {isSelected ? (
+                <ActionIcon
+                  size="xs"
+                  variant="default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMercTypeSelect(rawName);
+                  }}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              ) : (
+                <Text>{percentage.toFixed(1)}%</Text>
+              )}
             </Flex>
-            {isSelected ? (
-              <ActionIcon
-                size="xs"
-                variant="default"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMercTypeSelect(rawName);
-                }}
-              >
-                <IconX size={14} />
-              </ActionIcon>
-            ) : (
-              <Text>{percentage.toFixed(1)}%</Text>
-            )}
-          </Flex>
-        </Tooltip>
-      </Paper>
+          </Tooltip>
+        </Paper>
       </div>
     );
   };
@@ -185,7 +207,7 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
         flexDirection: "column",
         maxHeight: "425px",
         height: hasMercTypes ? undefined : "auto",
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)",
       }}
     >
       <div style={{ padding: "6px" }}>
@@ -198,7 +220,10 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
           rowCount={filteredMercTypes.length}
           rowHeight={ROW_HEIGHT}
           rowProps={{ mercTypes: filteredMercTypes }}
-          style={{ height: listHeight, overflowY: needsScroll ? 'auto' : 'hidden' }}
+          style={{
+            height: listHeight,
+            overflowY: needsScroll ? "auto" : "hidden",
+          }}
           className={styles.virtualList}
         />
       ) : (

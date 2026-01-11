@@ -47,18 +47,21 @@ export function LevelProgressChart({
   ];
 
   // Remove duplicate dates (keep the latest level for each date)
-  const uniqueData = chartData.reduce((acc, curr) => {
-    const existingIndex = acc.findIndex((item) => item.date === curr.date);
-    if (existingIndex !== -1) {
-      // Keep the one with higher timestamp (more recent)
-      if (curr.timestamp > acc[existingIndex].timestamp) {
-        acc[existingIndex] = curr;
+  const uniqueData = chartData.reduce(
+    (acc, curr) => {
+      const existingIndex = acc.findIndex((item) => item.date === curr.date);
+      if (existingIndex !== -1) {
+        // Keep the one with higher timestamp (more recent)
+        if (curr.timestamp > acc[existingIndex].timestamp) {
+          acc[existingIndex] = curr;
+        }
+      } else {
+        acc.push(curr);
       }
-    } else {
-      acc.push(curr);
-    }
-    return acc;
-  }, [] as typeof chartData);
+      return acc;
+    },
+    [] as typeof chartData
+  );
 
   // If only one data point, show a message instead of a chart
   if (uniqueData.length === 1) {
