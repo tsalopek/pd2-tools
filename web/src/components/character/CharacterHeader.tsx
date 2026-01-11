@@ -1,5 +1,5 @@
-import { Button, Card, Image, Text, Title, Badge, Group, Anchor } from "@mantine/core";
-import { IconExternalLink, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { Button, Card, Image, Text, Title, Badge, Group, Anchor, Select } from "@mantine/core";
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import RelativeTime from "@yaireo/relative-time";
 import type { CharacterHeaderProps } from "../../types";
@@ -17,6 +17,9 @@ export function CharacterHeader({
   accountName,
   isHardcore,
   season,
+  snapshots = [],
+  selectedSnapshot,
+  onSnapshotChange,
 }: CharacterHeaderProps) {
   const [searchParams] = useSearchParams();
 
@@ -96,20 +99,27 @@ export function CharacterHeader({
           </Button>
         </div>
 
-        <a
-          href={`https://projectdiablo2.com/character/${characterName}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{ textDecoration: "none", marginLeft: "auto" }}
-        >
-          <Button
-            variant="default"
+        {!isMobile && snapshots.length > 0 && (
+          <Select
+            placeholder="View snapshot"
+            value={selectedSnapshot}
+            onChange={onSnapshotChange}
+            data={[
+              {
+                value: "",
+                label: lastUpdated
+                  ? `${new Date(lastUpdated).toLocaleString()} - Level ${level}`
+                  : `Current - Level ${level}`,
+              },
+              ...snapshots.map((snapshot) => ({
+                value: String(snapshot.snapshot_id),
+                label: `${new Date(snapshot.snapshot_timestamp).toLocaleString()} - Level ${snapshot.level}`,
+              })),
+            ]}
+            style={{ marginLeft: "auto", width: "250px" }}
             size="sm"
-            rightSection={<IconExternalLink size={16} />}
-          >
-            Visit PD2 Armory
-          </Button>
-        </a>
+          />
+        )}
       </div>
 
       <Card h="100px" w="100%" radius="md" shadow="md" p="md">
@@ -161,12 +171,21 @@ export function CharacterHeader({
                   <Anchor
                     href={`/builds/account/${accountName}`}
                     size="xs"
-                    target="_blank"
                     style={{ display: "block", marginTop: "4px" }}
                   >
                     Account: {accountName}
                   </Anchor>
                 )}
+                <Anchor
+                  href={`https://projectdiablo2.com/character/${characterName}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="xs"
+                  c="blue"
+                  style={{ display: "block", marginTop: "4px" }}
+                >
+                  PD2 Armory ↗
+                </Anchor>
               </div>
               <div
                 style={{

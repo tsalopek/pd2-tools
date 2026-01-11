@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   // Characters
   characters: "/characters",
   character: "/characters",
+  characterSnapshots: "/characters", // Base path, will append /:name/snapshots
   itemUsage: "/characters/stats/item-usage",
   skillUsage: "/characters/stats/skill-usage",
   mercTypeUsage: "/characters/stats/merc-type-usage",

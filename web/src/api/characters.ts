@@ -9,6 +9,7 @@ import type {
   MercTypeStats,
   LevelDistribution,
   CharacterCounts,
+  CharacterSnapshotsResponse,
 } from "../types";
 
 export const charactersAPI = {
@@ -53,6 +54,35 @@ export const charactersAPI = {
         gameMode,
         season,
       }
+    );
+  },
+
+  /**
+   * Get all snapshots for a character
+   */
+  async getCharacterSnapshots(
+    name: string,
+    gameMode: string = "softcore",
+    season?: number
+  ): Promise<CharacterSnapshotsResponse> {
+    return apiClient.get<CharacterSnapshotsResponse>(
+      `${API_ENDPOINTS.characterSnapshots}/${name}/snapshots`,
+      {
+        gameMode,
+        season,
+      }
+    );
+  },
+
+  /**
+   * Get specific snapshot by ID
+   */
+  async getCharacterSnapshot(
+    name: string,
+    snapshotId: number
+  ): Promise<FullCharacterResponse | null> {
+    return apiClient.get<FullCharacterResponse | null>(
+      `${API_ENDPOINTS.characterSnapshots}/${name}/snapshots/${snapshotId}`
     );
   },
 

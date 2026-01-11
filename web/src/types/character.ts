@@ -3,6 +3,7 @@ export interface ICharacter {
   level: number;
   life: number;
   mana: number;
+  experience: number;
   class: { id: number; name: string };
   skills: Array<{ id: number; name: string; level: number }>;
   attributes?: {
@@ -165,4 +166,18 @@ export interface MercenaryInfo {
   level?: number;
   items?: unknown[];
   description?: string;
+}
+
+// Character snapshot (lightweight list item)
+export interface CharacterSnapshotListItem {
+  snapshot_id: number;
+  snapshot_timestamp: number;
+  level: number;
+  experience: number;
+}
+
+// Character snapshots list response
+export interface CharacterSnapshotsResponse {
+  snapshots: CharacterSnapshotListItem[];
+  total: number;
 }
