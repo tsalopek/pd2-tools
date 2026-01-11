@@ -10,6 +10,7 @@ import { Footer } from "./components/layout/Footer";
 import Home from "./pages/Home";
 import Builds from "./pages/Builds";
 import Character from "./pages/Character";
+import Account from "./pages/Account";
 import Economy from "./pages/Economy";
 import ItemDetail from "./pages/ItemDetail";
 import Statistics from "./pages/Statistics";
@@ -74,6 +75,10 @@ function App() {
                   <Route
                     path="/builds/character/:name"
                     element={<Character />}
+                  />
+                  <Route
+                    path="/builds/account/:accountName"
+                    element={<Account />}
                   />
 
                   {/* Economy */}
