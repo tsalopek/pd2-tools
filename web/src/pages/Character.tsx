@@ -98,6 +98,9 @@ export default function Character() {
                 isMobile={isMobile}
                 prevCharacter={prevCharacter}
                 nextCharacter={nextCharacter}
+                accountName={charQuery.data.accountName}
+                isHardcore={charQuery.data.character.status?.is_hardcore}
+                season={charQuery.data.character.season}
               />
             </Grid.Col>
 

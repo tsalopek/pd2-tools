@@ -165,6 +165,44 @@ router.get(
   }
 );
 
+// GET /api/accounts/:accountName - Get all characters for an account
+router.get(
+  "/accounts/:accountName",
+  validateSeason,
+  autoCache(900),
+  async (req: Request, res: Response) => {
+    try {
+      const { accountName } = req.params;
+      const { season } = req.query;
+
+      const seasonNumber = season
+        ? parseInt(season as string, 10)
+        : config.currentSeason;
+
+      const characters = await characterDB.getCharactersByAccount(
+        accountName,
+        seasonNumber
+      );
+
+      if (!characters || characters.length === 0) {
+        res.status(404).json({
+          error: { message: "No characters found for this account" },
+        });
+        return;
+      }
+
+      res.json({ characters, total: characters.length });
+    } catch (error: unknown) {
+      logger.error("Error fetching characters by account", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({
+        error: { message: "Failed to fetch characters by account" },
+      });
+    }
+  }
+);
+
 // GET /api/characters/stats/level-distribution - Get level distribution
 router.get(
   "/stats/level-distribution",
