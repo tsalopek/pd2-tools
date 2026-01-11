@@ -619,11 +619,28 @@ describe("API Routes", () => {
             level: 95,
             life: 1500,
             mana: 800,
+            experience: 2492671933,
             class: { id: 1, name: "Sorceress" },
+            attributes: {
+              strength: 100,
+              dexterity: 80,
+              vitality: 200,
+              energy: 50,
+            },
           },
           items: [
-            { name: "Shako", quality: { name: "Unique" } },
-            { name: "Oculus", quality: { name: "Unique" } },
+            {
+              name: "Shako",
+              quality: { name: "Unique" },
+              location: { equipment: "Head" },
+              properties: [],
+            },
+            {
+              name: "Oculus",
+              quality: { name: "Unique" },
+              location: { equipment: "Right Hand" },
+              properties: [],
+            },
           ],
           realSkills: [],
           lastUpdated: Date.now(),
@@ -669,9 +686,23 @@ describe("API Routes", () => {
           character: {
             name: "TestChar",
             level: 95,
+            experience: 2492671933,
             class: { id: 1, name: "Sorceress" },
+            attributes: {
+              strength: 100,
+              dexterity: 80,
+              vitality: 200,
+              energy: 50,
+            },
           },
-          items: [{ name: "Shako", quality: { name: "Unique" } }],
+          items: [
+            {
+              name: "Shako",
+              quality: { name: "Unique" },
+              location: { equipment: "Head" },
+              properties: [],
+            },
+          ],
           realSkills: [],
         };
 

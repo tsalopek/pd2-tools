@@ -15,6 +15,7 @@ const sampleChar1_Sorc = {
     level: 80,
     life: 1000,
     mana: 500,
+    experience: 681027665,
     class: { id: 1, name: "Sorceress" },
     skills: [
       { id: 1, name: "Fire Ball", level: 20 },
@@ -40,6 +41,7 @@ const sampleChar2_Pala = {
     level: 90,
     life: 1200,
     mana: 600,
+    experience: 1618470619,
     class: { id: 4, name: "Paladin" },
     skills: [
       { id: 10, name: "Blessed Hammer", level: 20 },
@@ -64,6 +66,7 @@ const sampleChar3_Sorc = {
     level: 70,
     life: 800,
     mana: 700,
+    experience: 285041630,
     class: { id: 1, name: "Sorceress" },
     skills: [
       { id: 1, name: "Fire Ball", level: 18 },
@@ -1523,30 +1526,35 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
   });
 
   describe("Character Snapshots", () => {
-    it("should create snapshot on first character ingestion", async () => {
-      const freshChar = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      await db.ingestCharacter(freshChar, gameModeSC, season11);
+    it("should create snapshot when character is re-ingested", async () => {
+      const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      await db.ingestCharacter(char1, gameModeSC, season11);
+
+      // Re-ingest with changes
+      const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char2.character.experience = 700000000;
+      await db.ingestCharacter(char2, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
         gameModeSC,
-        freshChar.character.name,
+        char1.character.name,
         season11
       );
 
+      // Should have 1 snapshot (the old state before second ingestion)
       expect(snapshots).toHaveLength(1);
-      expect(snapshots[0].level).toBe(freshChar.character.level);
-      expect(snapshots[0].full_response_json.character.name).toBe(
-        freshChar.character.name
-      );
+      expect(snapshots[0].level).toBe(char1.character.level);
+      expect(snapshots[0].experience).toBe(char1.character.experience);
     });
 
     it("should create snapshot when character level changes", async () => {
       const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       await db.ingestCharacter(char1, gameModeSC, season11);
 
-      // Change level and re-ingest
+      // Change level and experience
       const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      char2.character.level = 85;
+      char2.character.level = 86;
+      char2.character.experience = 1145236814;
       await db.ingestCharacter(char2, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
@@ -1555,17 +1563,17 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
         season11
       );
 
-      expect(snapshots.length).toBeGreaterThanOrEqual(2);
-      expect(snapshots[0].level).toBe(85); // Latest snapshot (DESC order)
-      expect(snapshots[1].level).toBe(80); // Previous snapshot
+      // First ingestion = 0 snapshots, Second ingestion = 1 snapshot (old state)
+      expect(snapshots).toHaveLength(1);
+      expect(snapshots[0].level).toBe(80); // Snapshot of old state (level 80)
     });
 
-    it("should create snapshot when character life changes", async () => {
+    it("should create snapshot when character experience changes", async () => {
       const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       await db.ingestCharacter(char1, gameModeSC, season11);
 
       const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      char2.character.life = 1500;
+      char2.character.experience = 700000000;
       await db.ingestCharacter(char2, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
@@ -1574,16 +1582,21 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
         season11
       );
 
-      expect(snapshots.length).toBeGreaterThanOrEqual(2);
+      expect(snapshots).toHaveLength(1);
+      expect(snapshots[0].experience).toBe(681027665); // Old state
     });
 
-    it("should create snapshot when character items change", async () => {
+    it("should create multiple snapshots over time", async () => {
       const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       await db.ingestCharacter(char1, gameModeSC, season11);
 
       const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      char2.items.push({ name: "Oculus", quality: { name: "Unique" } });
+      char2.character.experience = 700000000;
       await db.ingestCharacter(char2, gameModeSC, season11);
+
+      const char3 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char3.character.experience = 800000000;
+      await db.ingestCharacter(char3, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
         gameModeSC,
@@ -1591,15 +1604,20 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
         season11
       );
 
-      expect(snapshots.length).toBeGreaterThanOrEqual(2);
+      // 3 ingestions = 2 snapshots (first has no snapshot)
+      expect(snapshots).toHaveLength(2);
+      expect(snapshots[0].experience).toBe(700000000); // Most recent snapshot
+      expect(snapshots[1].experience).toBe(681027665); // Oldest snapshot
     });
 
-    it("should not create duplicate snapshot when character unchanged (within 24h)", async () => {
+    it("should not create snapshot when experience unchanged (within 24h)", async () => {
       const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char1.lastUpdated = Date.now();
       await db.ingestCharacter(char1, gameModeSC, season11);
 
-      // Re-ingest same character (no changes)
+      // Re-ingest same character (no changes to experience)
       const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char2.lastUpdated = Date.now();
       await db.ingestCharacter(char2, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
@@ -1608,12 +1626,17 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
         season11
       );
 
-      expect(snapshots).toHaveLength(1); // Should not create duplicate
+      expect(snapshots).toHaveLength(0); // No snapshot created (no change)
     });
 
     it("should retrieve specific snapshot by ID", async () => {
       const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       await db.ingestCharacter(char1, gameModeSC, season11);
+
+      // Create a snapshot by re-ingesting with changes
+      const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char2.character.experience = 700000000;
+      await db.ingestCharacter(char2, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
         gameModeSC,
@@ -1627,6 +1650,7 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
       expect(snapshot).not.toBeNull();
       expect(snapshot?.character.name).toBe(char1.character.name);
       expect(snapshot?.character.level).toBe(char1.character.level);
+      expect(snapshot?.character.experience).toBe(char1.character.experience);
     });
 
     it("should return snapshots in descending timestamp order", async () => {
@@ -1637,8 +1661,14 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
       await new Promise((resolve) => setTimeout(resolve, 1));
 
       const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      char2.character.level = 85;
+      char2.character.experience = 700000000;
       await db.ingestCharacter(char2, gameModeSC, season11);
+
+      await new Promise((resolve) => setTimeout(resolve, 1));
+
+      const char3 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char3.character.experience = 800000000;
+      await db.ingestCharacter(char3, gameModeSC, season11);
 
       const snapshots = await db.getCharacterSnapshots(
         gameModeSC,
@@ -1646,8 +1676,8 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
         season11
       );
 
-      expect(snapshots.length).toBeGreaterThanOrEqual(2);
-      // Most recent snapshot first
+      expect(snapshots).toHaveLength(2);
+      // Most recent snapshot first (DESC order)
       expect(snapshots[0].snapshot_timestamp).toBeGreaterThan(
         snapshots[1].snapshot_timestamp
       );
@@ -1669,36 +1699,47 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
     });
 
     it("should isolate snapshots by season", async () => {
-      const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      await db.ingestCharacter(char1, gameModeSC, season11);
+      // Season 11: Create character then re-ingest to create snapshot
+      const char1_s11 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      await db.ingestCharacter(char1_s11, gameModeSC, season11);
 
-      const char2 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
-      await db.ingestCharacter(char2, gameModeSC, season12);
+      const char2_s11 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char2_s11.character.experience = 700000000;
+      await db.ingestCharacter(char2_s11, gameModeSC, season11);
+
+      // Season 12: Create character then re-ingest to create snapshot
+      const char1_s12 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      await db.ingestCharacter(char1_s12, gameModeSC, season12);
+
+      const char2_s12 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      char2_s12.character.experience = 800000000;
+      await db.ingestCharacter(char2_s12, gameModeSC, season12);
 
       const s11Snapshots = await db.getCharacterSnapshots(
         gameModeSC,
-        char1.character.name,
+        sampleChar1_Sorc.character.name,
         season11
       );
       const s12Snapshots = await db.getCharacterSnapshots(
         gameModeSC,
-        char1.character.name,
+        sampleChar1_Sorc.character.name,
         season12
       );
 
-      expect(s11Snapshots.length).toBeGreaterThan(0);
-      expect(s12Snapshots.length).toBeGreaterThan(0);
+      expect(s11Snapshots).toHaveLength(1);
+      expect(s12Snapshots).toHaveLength(1);
       // Verify season isolation - snapshot IDs should be different
       expect(s11Snapshots[0].snapshot_id).not.toBe(s12Snapshots[0].snapshot_id);
     });
 
-    it("should cascade delete snapshots when character is deleted", async () => {
+    it("should delete snapshots when clearing game mode data", async () => {
       const freshChar = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       await db.ingestCharacter(freshChar, gameModeSC, season11);
 
       // Change character and ingest again to create multiple snapshots
       const updatedChar = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       updatedChar.character.level = 85;
+      updatedChar.character.experience = 1145236814;
       await db.ingestCharacter(updatedChar, gameModeSC, season11);
 
       // Clear character (which deletes it)
