@@ -1226,15 +1226,16 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
 
   describe("Account Name Feature", () => {
     it("should ingest character with account name", async () => {
+      const freshChar = JSON.parse(JSON.stringify(sampleChar1_Sorc));
       await db.ingestCharacter(
-        sampleChar1_Sorc,
+        freshChar,
         gameModeSC,
         season11,
         "TestAccount"
       );
       const char = await db.getCharacterByName(
         gameModeSC,
-        sampleChar1_Sorc.character.name,
+        freshChar.character.name,
         season11
       );
 
@@ -1243,10 +1244,11 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
     });
 
     it("should handle null account name (legacy characters)", async () => {
-      await db.ingestCharacter(sampleChar1_Sorc, gameModeSC, season11); // No account name
+      const freshChar = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+      await db.ingestCharacter(freshChar, gameModeSC, season11); // No account name
       const char = await db.getCharacterByName(
         gameModeSC,
-        sampleChar1_Sorc.character.name,
+        freshChar.character.name,
         season11
       );
 
