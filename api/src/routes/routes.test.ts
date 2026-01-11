@@ -20,6 +20,7 @@ jest.mock("../database", () => ({
   characterDB: {
     getFilteredCharacters: jest.fn(),
     getCharacterByName: jest.fn(),
+    getCharactersByAccount: jest.fn(),
     getLevelDistributions: jest.fn(),
     analyzeItemUsage: jest.fn(),
     analyzeSkillUsage: jest.fn(),
@@ -342,6 +343,168 @@ describe("API Routes", () => {
         expect(response.body).toEqual({
           error: { message: "Failed to fetch character" },
         });
+      });
+    });
+
+    describe("GET /api/v1/characters/accounts/:accountName", () => {
+      it("should return all characters for an account", async () => {
+        const mockCharacters = [
+          {
+            character: {
+              name: "Char1",
+              level: 90,
+              class: { id: 1, name: "Sorceress" },
+              life: 1000,
+              mana: 500,
+              season: 12,
+            },
+            items: [],
+            realSkills: [],
+            lastUpdated: Date.now(),
+            accountName: "TestAccount",
+          },
+          {
+            character: {
+              name: "Char2",
+              level: 85,
+              class: { id: 4, name: "Paladin" },
+              life: 1200,
+              mana: 600,
+              season: 12,
+            },
+            items: [],
+            realSkills: [],
+            lastUpdated: Date.now(),
+            accountName: "TestAccount",
+          },
+        ];
+
+        (characterDB.getCharactersByAccount as jest.Mock).mockResolvedValue(
+          mockCharacters
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/accounts/TestAccount")
+          .expect(200);
+
+        expect(response.body.characters.length).toBe(2);
+        expect(response.body.total).toBe(2);
+        expect(characterDB.getCharactersByAccount).toHaveBeenCalledWith(
+          "TestAccount",
+          12
+        );
+      });
+
+      it("should filter by season", async () => {
+        const mockCharacters = [
+          {
+            character: { name: "Char1", level: 90 },
+            accountName: "TestAccount",
+          },
+        ];
+
+        (characterDB.getCharactersByAccount as jest.Mock).mockResolvedValue(
+          mockCharacters
+        );
+
+        await request(app)
+          .get("/api/v1/characters/accounts/TestAccount")
+          .query({ season: 11 })
+          .expect(200);
+
+        expect(characterDB.getCharactersByAccount).toHaveBeenCalledWith(
+          "TestAccount",
+          11
+        );
+      });
+
+      it("should return 404 for account with no characters", async () => {
+        (characterDB.getCharactersByAccount as jest.Mock).mockResolvedValue([]);
+
+        const response = await request(app)
+          .get("/api/v1/characters/accounts/NonExistent")
+          .expect(404);
+
+        expect(response.body).toEqual({
+          error: { message: "No characters found for this account" },
+        });
+      });
+
+      it("should handle account names with special characters", async () => {
+        const mockCharacters = [
+          { character: { name: "TestChar" }, accountName: "Test_Account-123" },
+        ];
+
+        (characterDB.getCharactersByAccount as jest.Mock).mockResolvedValue(
+          mockCharacters
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/accounts/Test_Account-123")
+          .expect(200);
+
+        expect(response.body.characters.length).toBe(1);
+        expect(characterDB.getCharactersByAccount).toHaveBeenCalledWith(
+          "Test_Account-123",
+          12
+        );
+      });
+
+      it("should handle database errors", async () => {
+        (characterDB.getCharactersByAccount as jest.Mock).mockRejectedValue(
+          new Error("Database error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/accounts/TestAccount")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch characters by account" },
+        });
+      });
+
+      it("should return characters with season information", async () => {
+        const mockCharacters = [
+          {
+            character: {
+              name: "Char1",
+              level: 90,
+              season: 12,
+            },
+            accountName: "TestAccount",
+          },
+        ];
+
+        (characterDB.getCharactersByAccount as jest.Mock).mockResolvedValue(
+          mockCharacters
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/accounts/TestAccount")
+          .expect(200);
+
+        expect(response.body.characters[0].character.season).toBe(12);
+      });
+
+      it("should use current season when no season specified", async () => {
+        (characterDB.getCharactersByAccount as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/accounts/TestAccount")
+          .expect(404);
+
+        expect(characterDB.getCharactersByAccount).toHaveBeenCalledWith(
+          "TestAccount",
+          12
+        );
+      });
+
+      it("should return 400 for invalid season parameter", async () => {
+        await request(app)
+          .get("/api/v1/characters/accounts/TestAccount")
+          .query({ season: "invalid" })
+          .expect(400);
       });
     });
 
