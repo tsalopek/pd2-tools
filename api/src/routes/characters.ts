@@ -4,7 +4,7 @@ import { validateSeason } from "../middleware/validation";
 import { config, logger as mainLogger } from "../config";
 import CharacterStatParser from "../utils/character-stats";
 import { autoCache } from "../middleware/auto-cache";
-import { getCacheValue, setCacheValue } from "../utils/cache";
+import { getCacheValue, setCacheValue, deleteCachePattern } from "../utils/cache";
 import fetch from "node-fetch";
 
 const logger = mainLogger.createNamedLogger("API");
@@ -702,6 +702,10 @@ router.post("/:name/refresh", async (req: Request, res: Response) => {
 
     // Update rate limit cache in Redis (TTL: 15 minutes = 900 seconds)
     await setCacheValue(cacheKey, now, 900);
+
+    // Invalidate API cache for this character (all query param variations)
+    const deletedKeys = await deleteCachePattern(`auto:/characters/${name}:*`);
+    logger.debug(`Invalidated ${deletedKeys} cache keys for character: ${name}`);
 
     // Fetch and return updated character
     const updatedChar = await characterDB.getCharacterByName(gameMode, name, season);
