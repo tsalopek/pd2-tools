@@ -150,6 +150,7 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
                   width: "20px",
                   height: "20px",
                   flexShrink: 0,
+                  objectFit: "contain",
                 }}
               />
               <Text lineClamp={1}>{displayName}</Text>
