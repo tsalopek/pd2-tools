@@ -18,6 +18,9 @@ export interface CharacterHeaderProps {
   isMobile: boolean;
   prevCharacter?: string | null;
   nextCharacter?: string | null;
+  accountName?: string;
+  isHardcore?: boolean;
+  season?: number;
 }
 
 export interface EquipmentSectionProps {

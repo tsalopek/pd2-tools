@@ -1,4 +1,4 @@
-import { Button, Card, Image, Text, Title } from "@mantine/core";
+import { Button, Card, Image, Text, Title, Badge, Group, Anchor } from "@mantine/core";
 import { IconExternalLink, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import RelativeTime from "@yaireo/relative-time";
@@ -14,6 +14,9 @@ export function CharacterHeader({
   isMobile,
   prevCharacter,
   nextCharacter,
+  accountName,
+  isHardcore,
+  season,
 }: CharacterHeaderProps) {
   const [searchParams] = useSearchParams();
 
@@ -127,23 +130,62 @@ export function CharacterHeader({
             </div>
           </div>
           {!isMobile && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: "0",
-                right: "0",
-                textAlign: "right",
-                marginBottom: "4px",
-                marginRight: "6px",
-              }}
-            >
-              <Text size="xs">
-                Last updated:{" "}
-                {lastUpdated
-                  ? relativeTime.from(new Date(lastUpdated))
-                  : "Unknown"}
-              </Text>
-            </div>
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  top: "0",
+                  right: "0",
+                  textAlign: "right",
+                  marginTop: "6px",
+                  marginRight: "6px",
+                }}
+              >
+                <Group gap="xs" justify="flex-end">
+                  {isHardcore !== undefined && (
+                    <Badge
+                      color={isHardcore ? "red" : "blue"}
+                      variant="filled"
+                      size="sm"
+                    >
+                      {isHardcore ? "Hardcore" : "Softcore"}
+                    </Badge>
+                  )}
+                  {season && (
+                    <Badge color="grape" variant="filled" size="sm">
+                      Season {season}
+                    </Badge>
+                  )}
+                </Group>
+                {accountName && (
+                  <Anchor
+                    href={`/builds/account/${accountName}`}
+                    size="xs"
+                    target="_blank"
+                    style={{ display: "block", marginTop: "4px" }}
+                  >
+                    Account: {accountName}
+                  </Anchor>
+                )}
+              </div>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "0",
+                  right: "0",
+                  textAlign: "right",
+                  marginBottom: "4px",
+                  marginRight: "6px",
+                }}
+              >
+                <Text size="xs">
+                  Last updated:{" "}
+                  {lastUpdated
+                    ? relativeTime.from(new Date(lastUpdated))
+                    : "Unknown"}
+                </Text>
+              </div>
+            </>
           )}
         </div>
       </Card>

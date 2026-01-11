@@ -11,6 +11,7 @@ export interface FullCharacterResponse {
     mana: number;
     class: { id: number; name: string };
     skills: Array<{ id: number; name: string; level: number }>;
+    season?: number;
   } | null;
   items: Array<{
     name: string;
@@ -21,6 +22,7 @@ export interface FullCharacterResponse {
   nullReason?: string;
   realSkills: unknown[];
   lastUpdated: number;
+  accountName?: string;
   [key: string]: unknown;
 }
 
@@ -145,6 +147,9 @@ export default class CharacterDB_Postgres {
                 UNIQUE (game_mode_id, api_character_name, season)
             );
 
+            -- Add account_name column if it doesn't exist
+            ALTER TABLE Characters ADD COLUMN IF NOT EXISTS account_name TEXT;
+
             CREATE TABLE IF NOT EXISTS CharacterSkills (
                 character_db_id INTEGER NOT NULL,
                 skill_def_id INTEGER NOT NULL,
@@ -176,6 +181,7 @@ export default class CharacterDB_Postgres {
             CREATE INDEX IF NOT EXISTS idx_chars_class_id ON Characters(class_id);
             CREATE INDEX IF NOT EXISTS idx_chars_level ON Characters(level);
             CREATE INDEX IF NOT EXISTS idx_chars_season ON Characters(season);
+            CREATE INDEX IF NOT EXISTS idx_chars_account_name ON Characters(account_name);
             CREATE INDEX IF NOT EXISTS idx_char_skills_skill_def_id ON CharacterSkills(skill_def_id);
             CREATE INDEX IF NOT EXISTS idx_char_items_base_item_id ON CharacterItems(base_item_id);
             CREATE INDEX IF NOT EXISTS idx_char_items_quality_id ON CharacterItems(quality_id);
@@ -373,7 +379,8 @@ export default class CharacterDB_Postgres {
   public async ingestCharacter(
     charData: FullCharacterResponse,
     gameModeName: string,
-    season: number
+    season: number,
+    accountName?: string
   ): Promise<void> {
     if (!charData.character || !charData.character.name) return;
 
@@ -399,11 +406,16 @@ export default class CharacterDB_Postgres {
         [gameModeId, charData.character.name, season]
       );
 
+      // Add account_name to the response object if provided
+      if (accountName) {
+        charData.accountName = accountName;
+      }
+
       const charResult = await client.query(
         `INSERT INTO Characters (
                     game_mode_id, api_character_name, level, life, mana, class_id,
-                    season, last_updated, null_reason, full_response_json
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    season, last_updated, null_reason, full_response_json, account_name
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 RETURNING character_db_id`,
         [
           gameModeId,
@@ -416,6 +428,7 @@ export default class CharacterDB_Postgres {
           charData.lastUpdated || Date.now(),
           charData.nullReason,
           charData,
+          accountName || null,
         ]
       );
       const characterDbId = charResult.rows[0]?.character_db_id;
@@ -757,16 +770,54 @@ export default class CharacterDB_Postgres {
 
     if (season !== undefined) {
       query =
-        "SELECT full_response_json FROM Characters WHERE game_mode_id = $1 AND LOWER(api_character_name) = LOWER($2) AND season = $3";
+        "SELECT full_response_json, season, account_name FROM Characters WHERE game_mode_id = $1 AND LOWER(api_character_name) = LOWER($2) AND season = $3";
       params = [gameModeId, characterName, season];
     } else {
       query =
-        "SELECT full_response_json FROM Characters WHERE game_mode_id = $1 AND LOWER(api_character_name) = LOWER($2) ORDER BY season DESC LIMIT 1";
+        "SELECT full_response_json, season, account_name FROM Characters WHERE game_mode_id = $1 AND LOWER(api_character_name) = LOWER($2) ORDER BY season DESC LIMIT 1";
       params = [gameModeId, characterName];
     }
 
     const { rows } = await this.pool.query(query, params);
-    return rows[0]?.full_response_json || null;
+    if (!rows[0]) return null;
+
+    const character = rows[0].full_response_json;
+    // Add season and account_name from database columns to the response
+    if (character && character.character) {
+      character.character.season = rows[0].season;
+    }
+    if (rows[0].account_name) {
+      character.accountName = rows[0].account_name;
+    }
+    return character;
+  }
+
+  public async getCharactersByAccount(
+    accountName: string,
+    season?: number
+  ): Promise<FullCharacterResponse[]> {
+    let query: string;
+    let params: unknown[];
+
+    if (season !== undefined) {
+      query =
+        "SELECT full_response_json, season FROM Characters WHERE account_name = $1 AND season = $2 ORDER BY level DESC";
+      params = [accountName, season];
+    } else {
+      query =
+        "SELECT full_response_json, season FROM Characters WHERE account_name = $1 ORDER BY season DESC, level DESC";
+      params = [accountName];
+    }
+
+    const { rows } = await this.pool.query(query, params);
+    return rows.map((row) => {
+      const character = row.full_response_json;
+      // Add season from database column to the response
+      if (character && character.character) {
+        character.character.season = row.season;
+      }
+      return character;
+    });
   }
 
   public async analyzeItemUsage(

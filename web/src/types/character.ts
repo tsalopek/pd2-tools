@@ -11,6 +11,13 @@ export interface ICharacter {
     vitality: number;
     energy: number;
   };
+  status?: {
+    is_hardcore: boolean;
+    is_dead: boolean;
+    is_expansion: boolean;
+    is_ladder: boolean;
+  };
+  season?: number;
 }
 
 export interface IItem {
@@ -38,6 +45,7 @@ export interface FullCharacterResponse {
   nullReason?: string;
   realSkills?: unknown[];
   lastUpdated?: number;
+  accountName?: string;
   [key: string]: unknown;
 }
 

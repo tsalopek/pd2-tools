@@ -1223,4 +1223,267 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
       });
     });
   });
+
+  describe("Account Name Feature", () => {
+    it("should ingest character with account name", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      );
+      const char = await db.getCharacterByName(
+        gameModeSC,
+        sampleChar1_Sorc.character.name,
+        season11
+      );
+
+      expect(char).not.toBeNull();
+      expect(char?.accountName).toBe("TestAccount");
+    });
+
+    it("should handle null account name (legacy characters)", async () => {
+      await db.ingestCharacter(sampleChar1_Sorc, gameModeSC, season11); // No account name
+      const char = await db.getCharacterByName(
+        gameModeSC,
+        sampleChar1_Sorc.character.name,
+        season11
+      );
+
+      expect(char).not.toBeNull();
+      expect(char?.accountName).toBeUndefined();
+    });
+
+    it("should update account name when re-ingesting character", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "OldAccount"
+      );
+      let char = await db.getCharacterByName(
+        gameModeSC,
+        sampleChar1_Sorc.character.name,
+        season11
+      );
+      expect(char?.accountName).toBe("OldAccount");
+
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "NewAccount"
+      );
+      char = await db.getCharacterByName(
+        gameModeSC,
+        sampleChar1_Sorc.character.name,
+        season11
+      );
+      expect(char?.accountName).toBe("NewAccount");
+    });
+
+    it("should return characters by account name", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "MyAccount"
+      );
+      await db.ingestCharacter(
+        sampleChar2_Pala,
+        gameModeSC,
+        season11,
+        "MyAccount"
+      );
+      await db.ingestCharacter(
+        sampleChar3_Sorc,
+        gameModeSC,
+        season11,
+        "OtherAccount"
+      );
+
+      const chars = await db.getCharactersByAccount("MyAccount", season11);
+      expect(chars.length).toBe(2);
+      chars.forEach((char) => {
+        expect(char.accountName).toBe("MyAccount");
+      });
+    });
+
+    it("should return empty array for non-existent account", async () => {
+      const chars = await db.getCharactersByAccount(
+        "NonExistentAccount",
+        season11
+      );
+      expect(chars.length).toBe(0);
+    });
+
+    it("should return characters sorted by level DESC", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      ); // Level 80
+      await db.ingestCharacter(
+        sampleChar2_Pala,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      ); // Level 90
+      await db.ingestCharacter(
+        sampleChar3_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      ); // Level 70
+
+      const chars = await db.getCharactersByAccount("TestAccount", season11);
+      expect(chars.length).toBe(3);
+      expect(chars[0].character!.name).toBe(sampleChar2_Pala.character.name); // Level 90
+      expect(chars[1].character!.name).toBe(sampleChar1_Sorc.character.name); // Level 80
+      expect(chars[2].character!.name).toBe(sampleChar3_Sorc.character.name); // Level 70
+    });
+
+    it("should filter characters by account and season", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      );
+      await db.ingestCharacter(
+        sampleChar2_Pala,
+        gameModeSC,
+        season12,
+        "TestAccount"
+      );
+
+      const s11Chars = await db.getCharactersByAccount("TestAccount", season11);
+      const s12Chars = await db.getCharactersByAccount("TestAccount", season12);
+
+      expect(s11Chars.length).toBe(1);
+      expect(s12Chars.length).toBe(1);
+      expect(s11Chars[0].character!.name).toBe(
+        sampleChar1_Sorc.character.name
+      );
+      expect(s12Chars[0].character!.name).toBe(
+        sampleChar2_Pala.character.name
+      );
+    });
+
+    it("should return all seasons when no season specified", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      );
+      await db.ingestCharacter(
+        sampleChar2_Pala,
+        gameModeSC,
+        season12,
+        "TestAccount"
+      );
+
+      const allChars = await db.getCharactersByAccount("TestAccount");
+      expect(allChars.length).toBe(2);
+    });
+
+    it("should handle account names with special characters", async () => {
+      const specialAccountName = "Test_Account-123";
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        specialAccountName
+      );
+
+      const chars = await db.getCharactersByAccount(
+        specialAccountName,
+        season11
+      );
+      expect(chars.length).toBe(1);
+      expect(chars[0].accountName).toBe(specialAccountName);
+    });
+
+    it("should isolate accounts across game modes", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      );
+      await db.ingestCharacter(
+        sampleChar2_Pala,
+        gameModeHC,
+        season11,
+        "TestAccount"
+      );
+
+      const allChars = await db.getCharactersByAccount("TestAccount", season11);
+      // Should return both SC and HC characters with same account name
+      expect(allChars.length).toBe(2);
+    });
+  });
+
+  describe("Season in Character Response", () => {
+    it("should return season in character response from getCharacterByName", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      );
+      const char = await db.getCharacterByName(
+        gameModeSC,
+        sampleChar1_Sorc.character.name,
+        season11
+      );
+
+      expect(char).not.toBeNull();
+      expect(char?.character?.season).toBe(season11);
+    });
+
+    it("should return season in character response from getCharactersByAccount", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      );
+      const chars = await db.getCharactersByAccount("TestAccount", season11);
+
+      expect(chars.length).toBe(1);
+      expect(chars[0].character?.season).toBe(season11);
+    });
+
+    it("should return correct season for different characters", async () => {
+      await db.ingestCharacter(
+        sampleChar1_Sorc,
+        gameModeSC,
+        season11,
+        "TestAccount"
+      );
+      await db.ingestCharacter(
+        sampleChar2_Pala,
+        gameModeSC,
+        season12,
+        "TestAccount"
+      );
+
+      const s11Char = await db.getCharacterByName(
+        gameModeSC,
+        sampleChar1_Sorc.character.name,
+        season11
+      );
+      const s12Char = await db.getCharacterByName(
+        gameModeSC,
+        sampleChar2_Pala.character.name,
+        season12
+      );
+
+      expect(s11Char?.character?.season).toBe(season11);
+      expect(s12Char?.character?.season).toBe(season12);
+    });
+  });
 });

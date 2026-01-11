@@ -361,7 +361,7 @@ class ConsumerWorker {
 
   private async processCharacter(
     characterName: string,
-    _sourceAccount: string,
+    sourceAccount: string,
     nlCharSet: Set<string>
   ): Promise<void> {
     const charData = await this.apiClient.getChar(characterName);
@@ -382,7 +382,7 @@ class ConsumerWorker {
 
     if (charData.character.status.is_ladder) {
       if (this.shouldIngestCharacter(charData)) {
-        await this.ingestCharacter(charData);
+        await this.ingestCharacter(charData, sourceAccount);
       } else {
         logger.debug(
           `Consumer: Skipped ${characterName} (Lvl ${charData.character.level || "N/A"}), ladder but low level.`
@@ -403,7 +403,10 @@ class ConsumerWorker {
     );
   }
 
-  private async ingestCharacter(charData: CharacterApiResponse): Promise<void> {
+  private async ingestCharacter(
+    charData: CharacterApiResponse,
+    sourceAccount: string
+  ): Promise<void> {
     const gameMode = charData.character!.status!.is_hardcore
       ? "hardcore"
       : "softcore";
@@ -415,7 +418,8 @@ class ConsumerWorker {
     await characterDB.ingestCharacter(
       charData as FullCharacterResponse,
       gameMode,
-      config.currentSeason
+      config.currentSeason,
+      sourceAccount
     );
     logger.debug(
       `Consumer: Ingested ${charData.character!.name} (Lvl ${charData.character!.level}, ${gameMode}).`
