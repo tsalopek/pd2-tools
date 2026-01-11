@@ -1,17 +1,23 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Card,
   Flex,
   Text,
   Paper,
-  Tooltip,
   ActionIcon,
+  Tooltip,
 } from "@mantine/core";
 import { IconInfoCircle, IconX } from "@tabler/icons-react";
 import { List, RowComponentProps } from "react-window";
 import type { CharacterFilters } from "../../../hooks";
 import type { ItemUsageStats } from "../../../types";
 import styles from "../VirtualList.module.css";
+import {
+  type ItemData,
+  getBrightBorderColor,
+  getDarkBackgroundColor,
+  ItemTooltip,
+} from "../shared/ItemHelpers";
 
 interface Props {
   data: {
@@ -22,6 +28,22 @@ interface Props {
 }
 
 export default function UniqueCard({ data, filters, updateFilters }: Props) {
+  const [itemsData, setItemsData] = useState<Map<string, ItemData>>(new Map());
+
+  // Load items.json and create lookup map
+  useEffect(() => {
+    fetch('/items.json')
+      .then(res => res.json())
+      .then((items: ItemData[]) => {
+        const dataMap = new Map<string, ItemData>();
+        items.forEach(item => {
+          dataMap.set(item.gearId.name, item);
+        });
+        setItemsData(dataMap);
+      })
+      .catch(err => console.error('Failed to load items.json:', err));
+  }, []);
+
   // Create memoized Set for O(1) lookups
   const selectedItemsSet = useMemo(
     () => new Set(filters.itemFilter),
@@ -96,6 +118,11 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
 
   const ItemRow = ({ index, items, style }: RowComponentProps<{ items: ItemRowData[] }>) => {
     const { name, percentage, type, isSelected } = items[index];
+    const itemData = itemsData.get(name);
+    const imageUrl = itemData?.imageUrl;
+    const borderColor = getBrightBorderColor(type);
+    const backgroundColor = getDarkBackgroundColor(type);
+
     return (
       <div style={style}>
     <Paper
@@ -136,13 +163,40 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
           zIndex: 0,
         }}
       />
-      <Tooltip label={name} position="right" openDelay={500} withArrow>
+      <ItemTooltip itemData={itemData} itemType={type} itemName={name}>
         <Flex
           justify="space-between"
           align="center"
-          style={{ position: "relative", zIndex: 1 }}
+          style={{ position: "relative", zIndex: 1, width: "100%" }}
         >
-          <Text lineClamp={1}>{name}</Text>
+          <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
+            <div
+              style={{
+                width: "20px",
+                height: "20px",
+                flexShrink: 0,
+                border: imageUrl ? `0.25px solid ${borderColor}` : "none",
+                backgroundColor: imageUrl ? backgroundColor : "transparent",
+                borderRadius: "2px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {imageUrl && (
+                <img
+                  src={imageUrl}
+                  alt={name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              )}
+            </div>
+            <Text lineClamp={1}>{name}</Text>
+          </Flex>
           {isSelected ? (
             <ActionIcon
               size="xs"
@@ -158,7 +212,7 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
             <Text>{percentage.toFixed(1)}%</Text>
           )}
         </Flex>
-      </Tooltip>
+      </ItemTooltip>
     </Paper>
     </div>
     );

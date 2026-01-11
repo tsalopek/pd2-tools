@@ -137,6 +137,7 @@ export default function SkillCard({ data, filters, updateFilters }: Props) {
                 width: "20px",
                 height: "20px",
                 flexShrink: 0,
+                objectFit: "contain",
               }}
             />
             <Text lineClamp={1}>{name}</Text>
