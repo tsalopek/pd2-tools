@@ -144,8 +144,7 @@ export default function Account() {
                         cursor: "pointer",
                         textDecoration: "none",
                         color: "inherit",
-                        borderColor: isHardcore ? "#fa5252" : undefined,
-                        borderWidth: isHardcore ? "2px" : "1px",
+                        borderWidth: "1px",
                       }}
                     >
                       <Stack gap="sm">

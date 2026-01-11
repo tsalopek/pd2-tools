@@ -9,7 +9,7 @@ import {
   Anchor,
   Select,
 } from "@mantine/core";
-import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { IconChevronLeft, IconChevronRight, IconExternalLink } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import RelativeTime from "@yaireo/relative-time";
 import type { CharacterHeaderProps } from "../../types";
@@ -126,9 +126,7 @@ export function CharacterHeader({
             data={[
               {
                 value: "",
-                label: lastUpdated
-                  ? `${new Date(lastUpdated).toLocaleString()} - Level ${level}`
-                  : `Current - Level ${level}`,
+                label: "Latest snapshot",
               },
               ...snapshots.map((snapshot) => ({
                 value: String(snapshot.snapshot_id),
@@ -190,6 +188,7 @@ export function CharacterHeader({
                   <Anchor
                     href={`/builds/account/${accountName}`}
                     size="xs"
+                    target="_blank"
                     style={{ display: "block", marginTop: "4px" }}
                   >
                     Account: {accountName}
@@ -203,7 +202,7 @@ export function CharacterHeader({
                   c="blue"
                   style={{ display: "block", marginTop: "4px" }}
                 >
-                  PD2 Armory ↗
+                  PD2 Armory <IconExternalLink size={12} style={{ display: "inline", position: "relative", top: "2px" }} />
                 </Anchor>
               </div>
               <div
