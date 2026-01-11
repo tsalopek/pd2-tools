@@ -101,90 +101,152 @@ export const ItemTooltip = ({
   const gradientMid = `rgba(${r}, ${g}, ${b}, 0.12)`;
 
   const attributes = itemData?.afterAttributes || itemData?.newAttributes || "";
-  const attributeList = attributes.split(",").map((s) => s.trim()).filter(Boolean);
+  const attributeList = attributes
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   return (
     <>
-      <div ref={triggerRef} onMouseEnter={handleEnter} onMouseLeave={handleLeave} style={{ width: "100%" }}>
+      <div
+        ref={triggerRef}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        style={{ width: "100%" }}
+      >
         {children}
       </div>
 
-      {show && createPortal(
-        <div style={{
-          position: "fixed",
-          top: `${pos.top}px`,
-          left: `${pos.left}px`,
-          transform: "translateY(-50%)",
-          zIndex: 99999,
-          pointerEvents: "none",
-        }}>
-          <div style={{
-            position: "absolute",
-            left: "-5px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: 0,
-            height: 0,
-            borderTop: "5px solid transparent",
-            borderBottom: "5px solid transparent",
-            borderRight: `5px solid ${borderColor}`,
-          }} />
+      {show &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: `${pos.top}px`,
+              left: `${pos.left}px`,
+              transform: "translateY(-50%)",
+              zIndex: 99999,
+              pointerEvents: "none",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: "-5px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 0,
+                height: 0,
+                borderTop: "5px solid transparent",
+                borderBottom: "5px solid transparent",
+                borderRight: `5px solid ${borderColor}`,
+              }}
+            />
 
-          <div style={{
-            border: `1.5px solid ${borderColor}`,
-            borderRadius: "4px",
-            background: `linear-gradient(to bottom, ${gradientStart} 0%, ${gradientMid} 30%, rgba(0, 0, 0, 0.4) 100%)`,
-            backgroundColor: "rgb(16, 18, 23)",
-            padding: "12px",
-            minWidth: "260px",
-            maxWidth: "380px",
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 0, 0, 0.8)",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
-              {itemData?.imageUrl && (
-                <img
-                  src={itemData.imageUrl}
-                  alt={itemName}
+            <div
+              style={{
+                border: `1.5px solid ${borderColor}`,
+                borderRadius: "4px",
+                background: `linear-gradient(to bottom, ${gradientStart} 0%, ${gradientMid} 30%, rgba(0, 0, 0, 0.4) 100%)`,
+                backgroundColor: "rgb(16, 18, 23)",
+                padding: "12px",
+                minWidth: "260px",
+                maxWidth: "380px",
+                boxShadow:
+                  "0 8px 24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 0, 0, 0.8)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "10px",
+                }}
+              >
+                {itemData?.imageUrl && (
+                  <img
+                    src={itemData.imageUrl}
+                    alt={itemName}
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      flexShrink: 0,
+                      border: `1.5px solid ${borderColor}`,
+                      backgroundColor: getDarkBackgroundColor(itemType),
+                      borderRadius: "3px",
+                      objectFit: "contain",
+                    }}
+                  />
+                )}
+                <div
                   style={{
-                    width: "36px",
-                    height: "36px",
-                    flexShrink: 0,
-                    border: `1.5px solid ${borderColor}`,
-                    backgroundColor: getDarkBackgroundColor(itemType),
-                    borderRadius: "3px",
-                    objectFit: "contain",
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    color: borderColor,
+                    letterSpacing: "0.3px",
                   }}
-                />
-              )}
-              <div style={{ fontWeight: 700, fontSize: "15px", color: borderColor, letterSpacing: "0.3px" }}>{itemName}</div>
-            </div>
-
-            {itemData && (
-              <>
-                <div style={{ fontSize: "11.5px", marginBottom: "10px", display: "flex", gap: "8px", paddingBottom: "8px", borderBottom: `1px solid rgba(${r}, ${g}, ${b}, 0.2)` }}>
-                  <span>{itemData.itemType}</span>
-                  {itemData.requiredLevel && <><span>•</span><span>{itemData.requiredLevel}</span></>}
+                >
+                  {itemName}
                 </div>
+              </div>
 
-                {itemData.runes && (
-                  <div style={{ fontSize: "12px", marginBottom: "10px", color: "#fbbf24", fontWeight: 600, padding: "6px 8px", backgroundColor: "rgba(251, 191, 36, 0.1)", borderRadius: "3px", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
-                    {itemData.runes}
+              {itemData && (
+                <>
+                  <div
+                    style={{
+                      fontSize: "11.5px",
+                      marginBottom: "10px",
+                      display: "flex",
+                      gap: "8px",
+                      paddingBottom: "8px",
+                      borderBottom: `1px solid rgba(${r}, ${g}, ${b}, 0.2)`,
+                    }}
+                  >
+                    <span>{itemData.itemType}</span>
+                    {itemData.requiredLevel && (
+                      <>
+                        <span>•</span>
+                        <span>{itemData.requiredLevel}</span>
+                      </>
+                    )}
                   </div>
-                )}
 
-                {attributeList.length > 0 && (
-                  <div style={{ fontSize: "12px", lineHeight: "1.6"  }}>
-                    {attributeList.map((attr, i) => (
-                      <div key={i} style={{ marginBottom: "4px", paddingLeft: "4px" }}>{attr}</div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
+                  {itemData.runes && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        marginBottom: "10px",
+                        color: "#fbbf24",
+                        fontWeight: 600,
+                        padding: "6px 8px",
+                        backgroundColor: "rgba(251, 191, 36, 0.1)",
+                        borderRadius: "3px",
+                        border: "1px solid rgba(251, 191, 36, 0.3)",
+                      }}
+                    >
+                      {itemData.runes}
+                    </div>
+                  )}
+
+                  {attributeList.length > 0 && (
+                    <div style={{ fontSize: "12px", lineHeight: "1.6" }}>
+                      {attributeList.map((attr, i) => (
+                        <div
+                          key={i}
+                          style={{ marginBottom: "4px", paddingLeft: "4px" }}
+                        >
+                          {attr}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };

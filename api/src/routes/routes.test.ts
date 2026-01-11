@@ -21,6 +21,8 @@ jest.mock("../database", () => ({
     getFilteredCharacters: jest.fn(),
     getCharacterByName: jest.fn(),
     getCharactersByAccount: jest.fn(),
+    getCharacterSnapshots: jest.fn(),
+    getCharacterSnapshot: jest.fn(),
     getLevelDistributions: jest.fn(),
     analyzeItemUsage: jest.fn(),
     analyzeSkillUsage: jest.fn(),
@@ -505,6 +507,228 @@ describe("API Routes", () => {
           .get("/api/v1/characters/accounts/TestAccount")
           .query({ season: "invalid" })
           .expect(400);
+      });
+    });
+
+    describe("GET /api/v1/characters/:name/snapshots", () => {
+      it("should return all snapshots for a character", async () => {
+        const mockSnapshots = [
+          {
+            snapshot_id: 1,
+            snapshot_timestamp: Date.now(),
+            level: 95,
+            full_response_json: {
+              character: { name: "TestChar", level: 95 },
+            },
+          },
+          {
+            snapshot_id: 2,
+            snapshot_timestamp: Date.now() - 86400000, // 24h ago
+            level: 90,
+            full_response_json: {
+              character: { name: "TestChar", level: 90 },
+            },
+          },
+        ];
+
+        (characterDB.getCharacterSnapshots as jest.Mock).mockResolvedValue(
+          mockSnapshots
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar/snapshots")
+          .expect(200);
+
+        expect(response.body.snapshots.length).toBe(2);
+        expect(response.body.total).toBe(2);
+        expect(response.body.snapshots[0]).toHaveProperty("snapshot_id");
+        expect(response.body.snapshots[0]).toHaveProperty("snapshot_timestamp");
+        expect(response.body.snapshots[0]).toHaveProperty("level");
+        expect(response.body.snapshots[0]).not.toHaveProperty(
+          "full_response_json"
+        ); // Should not include full JSON in list
+        expect(characterDB.getCharacterSnapshots).toHaveBeenCalledWith(
+          "softcore",
+          "TestChar",
+          12
+        );
+      });
+
+      it("should filter snapshots by season", async () => {
+        (characterDB.getCharacterSnapshots as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/TestChar/snapshots")
+          .query({ season: 11 })
+          .expect(404);
+
+        expect(characterDB.getCharacterSnapshots).toHaveBeenCalledWith(
+          "softcore",
+          "TestChar",
+          11
+        );
+      });
+
+      it("should filter snapshots by game mode", async () => {
+        (characterDB.getCharacterSnapshots as jest.Mock).mockResolvedValue([]);
+
+        await request(app)
+          .get("/api/v1/characters/TestChar/snapshots")
+          .query({ gameMode: "hardcore" })
+          .expect(404);
+
+        expect(characterDB.getCharacterSnapshots).toHaveBeenCalledWith(
+          "hardcore",
+          "TestChar",
+          12
+        );
+      });
+
+      it("should return 404 when no snapshots found", async () => {
+        (characterDB.getCharacterSnapshots as jest.Mock).mockResolvedValue([]);
+
+        const response = await request(app)
+          .get("/api/v1/characters/NonExistent/snapshots")
+          .expect(404);
+
+        expect(response.body).toEqual({
+          error: { message: "No snapshots found for this character" },
+        });
+      });
+
+      it("should handle database errors", async () => {
+        (characterDB.getCharacterSnapshots as jest.Mock).mockRejectedValue(
+          new Error("Database error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar/snapshots")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch character snapshots" },
+        });
+      });
+    });
+
+    describe("GET /api/v1/characters/:name/snapshots/:snapshotId", () => {
+      it("should return specific snapshot by ID", async () => {
+        const mockSnapshot = {
+          character: {
+            name: "TestChar",
+            level: 95,
+            life: 1500,
+            mana: 800,
+            experience: 2492671933,
+            class: { id: 1, name: "Sorceress" },
+            attributes: {
+              strength: 100,
+              dexterity: 80,
+              vitality: 200,
+              energy: 50,
+            },
+          },
+          items: [
+            {
+              name: "Shako",
+              quality: { name: "Unique" },
+              location: { equipment: "Head" },
+              properties: [],
+            },
+            {
+              name: "Oculus",
+              quality: { name: "Unique" },
+              location: { equipment: "Right Hand" },
+              properties: [],
+            },
+          ],
+          realSkills: [],
+          lastUpdated: Date.now(),
+        };
+
+        (characterDB.getCharacterSnapshot as jest.Mock).mockResolvedValue(
+          mockSnapshot
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar/snapshots/123")
+          .expect(200);
+
+        expect(response.body.character.name).toBe("TestChar");
+        expect(response.body.character.level).toBe(95);
+        expect(characterDB.getCharacterSnapshot).toHaveBeenCalledWith(123);
+      });
+
+      it("should return 404 for non-existent snapshot", async () => {
+        (characterDB.getCharacterSnapshot as jest.Mock).mockResolvedValue(null);
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar/snapshots/999")
+          .expect(404);
+
+        expect(response.body).toEqual({
+          error: { message: "Snapshot not found" },
+        });
+      });
+
+      it("should return 400 for invalid snapshot ID", async () => {
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar/snapshots/invalid")
+          .expect(400);
+
+        expect(response.body).toEqual({
+          error: { message: "Invalid snapshot ID" },
+        });
+      });
+
+      it("should calculate realStats for snapshot with items", async () => {
+        const mockSnapshot = {
+          character: {
+            name: "TestChar",
+            level: 95,
+            experience: 2492671933,
+            class: { id: 1, name: "Sorceress" },
+            attributes: {
+              strength: 100,
+              dexterity: 80,
+              vitality: 200,
+              energy: 50,
+            },
+          },
+          items: [
+            {
+              name: "Shako",
+              quality: { name: "Unique" },
+              location: { equipment: "Head" },
+              properties: [],
+            },
+          ],
+          realSkills: [],
+        };
+
+        (characterDB.getCharacterSnapshot as jest.Mock).mockResolvedValue(
+          mockSnapshot
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar/snapshots/123")
+          .expect(200);
+
+        expect(response.body).toHaveProperty("realStats"); // Should calculate stats
+      });
+
+      it("should handle database errors", async () => {
+        (characterDB.getCharacterSnapshot as jest.Mock).mockRejectedValue(
+          new Error("Database error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/characters/TestChar/snapshots/123")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: { message: "Failed to fetch character snapshot" },
+        });
       });
     });
 

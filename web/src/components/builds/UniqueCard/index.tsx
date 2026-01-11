@@ -1,12 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import {
-  Card,
-  Flex,
-  Text,
-  Paper,
-  ActionIcon,
-  Tooltip,
-} from "@mantine/core";
+import { Card, Flex, Text, Paper, ActionIcon, Tooltip } from "@mantine/core";
 import { IconInfoCircle, IconX } from "@tabler/icons-react";
 import { List, RowComponentProps } from "react-window";
 import type { CharacterFilters } from "../../../hooks";
@@ -32,16 +25,16 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
 
   // Load items.json and create lookup map
   useEffect(() => {
-    fetch('/items.json')
-      .then(res => res.json())
+    fetch("/items.json")
+      .then((res) => res.json())
       .then((items: ItemData[]) => {
         const dataMap = new Map<string, ItemData>();
-        items.forEach(item => {
+        items.forEach((item) => {
           dataMap.set(item.gearId.name, item);
         });
         setItemsData(dataMap);
       })
-      .catch(err => console.error('Failed to load items.json:', err));
+      .catch((err) => console.error("Failed to load items.json:", err));
   }, []);
 
   // Create memoized Set for O(1) lookups
@@ -114,9 +107,18 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
   const listHeight = Math.min(itemPercentages.length * ROW_HEIGHT, MAX_HEIGHT);
   const needsScroll = itemPercentages.length * ROW_HEIGHT > MAX_HEIGHT;
 
-  type ItemRowData = { name: string; percentage: number; type: string; isSelected: boolean };
+  type ItemRowData = {
+    name: string;
+    percentage: number;
+    type: string;
+    isSelected: boolean;
+  };
 
-  const ItemRow = ({ index, items, style }: RowComponentProps<{ items: ItemRowData[] }>) => {
+  const ItemRow = ({
+    index,
+    items,
+    style,
+  }: RowComponentProps<{ items: ItemRowData[] }>) => {
     const { name, percentage, type, isSelected } = items[index];
     const itemData = itemsData.get(name);
     const imageUrl = itemData?.imageUrl;
@@ -125,96 +127,96 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
 
     return (
       <div style={style}>
-    <Paper
-      key={name}
-      withBorder
-      radius={0}
-      p="5"
-      style={{
-        cursor: "pointer",
-        borderLeft: "none",
-        borderRight: "none",
-        borderBottom: "none",
-        position: "relative",
-        overflow: "hidden",
-        backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
-      }}
-      variant="hover"
-      onClick={(e) => {
-        const backgroundBar = e.currentTarget.querySelector(
-          'div[style*="position: absolute"]'
-        ) as HTMLElement | null;
-        if (backgroundBar) {
-          backgroundBar.style.width = "0%";
-        }
-        handleItemSelect(name);
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: `${percentage}%`,
-          backgroundColor: isSelected
-            ? "rgba(0, 255, 0, 0.2)"
-            : getItemTypeColor(type),
-          zIndex: 0,
-        }}
-      />
-      <ItemTooltip itemData={itemData} itemType={type} itemName={name}>
-        <Flex
-          justify="space-between"
-          align="center"
-          style={{ position: "relative", zIndex: 1, width: "100%" }}
+        <Paper
+          key={name}
+          withBorder
+          radius={0}
+          p="5"
+          style={{
+            cursor: "pointer",
+            borderLeft: "none",
+            borderRight: "none",
+            borderBottom: "none",
+            position: "relative",
+            overflow: "hidden",
+            backgroundColor: isSelected ? "rgba(0, 255, 0, 0.2)" : undefined,
+          }}
+          variant="hover"
+          onClick={(e) => {
+            const backgroundBar = e.currentTarget.querySelector(
+              'div[style*="position: absolute"]'
+            ) as HTMLElement | null;
+            if (backgroundBar) {
+              backgroundBar.style.width = "0%";
+            }
+            handleItemSelect(name);
+          }}
         >
-          <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
-            <div
-              style={{
-                width: "20px",
-                height: "20px",
-                flexShrink: 0,
-                border: imageUrl ? `0.25px solid ${borderColor}` : "none",
-                backgroundColor: imageUrl ? backgroundColor : "transparent",
-                borderRadius: "2px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: `${percentage}%`,
+              backgroundColor: isSelected
+                ? "rgba(0, 255, 0, 0.2)"
+                : getItemTypeColor(type),
+              zIndex: 0,
+            }}
+          />
+          <ItemTooltip itemData={itemData} itemType={type} itemName={name}>
+            <Flex
+              justify="space-between"
+              align="center"
+              style={{ position: "relative", zIndex: 1, width: "100%" }}
             >
-              {imageUrl && (
-                <img
-                  src={imageUrl}
-                  alt={name}
+              <Flex align="center" gap="6px" style={{ minWidth: 0 }}>
+                <div
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
+                    width: "20px",
+                    height: "20px",
+                    flexShrink: 0,
+                    border: imageUrl ? `0.25px solid ${borderColor}` : "none",
+                    backgroundColor: imageUrl ? backgroundColor : "transparent",
+                    borderRadius: "2px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                />
+                >
+                  {imageUrl && (
+                    <img
+                      src={imageUrl}
+                      alt={name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
+                  )}
+                </div>
+                <Text lineClamp={1}>{name}</Text>
+              </Flex>
+              {isSelected ? (
+                <ActionIcon
+                  size="xs"
+                  variant="default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleItemSelect(name);
+                  }}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              ) : (
+                <Text>{percentage.toFixed(1)}%</Text>
               )}
-            </div>
-            <Text lineClamp={1}>{name}</Text>
-          </Flex>
-          {isSelected ? (
-            <ActionIcon
-              size="xs"
-              variant="default"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleItemSelect(name);
-              }}
-            >
-              <IconX size={14} />
-            </ActionIcon>
-          ) : (
-            <Text>{percentage.toFixed(1)}%</Text>
-          )}
-        </Flex>
-      </ItemTooltip>
-    </Paper>
-    </div>
+            </Flex>
+          </ItemTooltip>
+        </Paper>
+      </div>
     );
   };
 
@@ -227,7 +229,7 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
         flexDirection: "column",
         maxHeight: "400px",
         height: hasItems ? undefined : "auto",
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)",
       }}
     >
       <div
@@ -266,7 +268,11 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
           rowCount={itemPercentages.length}
           rowHeight={ROW_HEIGHT}
           rowProps={{ items: itemPercentages }}
-          style={{ height: listHeight, backgroundColor: 'rgba(0, 0, 0, 0.15)', overflowY: needsScroll ? 'auto' : 'hidden' }}
+          style={{
+            height: listHeight,
+            backgroundColor: "rgba(0, 0, 0, 0.15)",
+            overflowY: needsScroll ? "auto" : "hidden",
+          }}
           className={styles.virtualList}
         />
       )}

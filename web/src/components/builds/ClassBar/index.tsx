@@ -167,7 +167,8 @@ export default function ClassBar({
         py="xs"
         px="sm"
         style={{
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)',
+          boxShadow:
+            "0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)",
         }}
       >
         <Flex
@@ -229,7 +230,8 @@ export default function ClassBar({
           style={{
             width: "185px",
             height: "60px",
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)',
+            boxShadow:
+              "0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)",
           }}
         >
           <Flex justify="center" align="center" h="100%">
@@ -257,7 +259,8 @@ export default function ClassBar({
           style={{
             flex: 1,
             height: "60px",
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)',
+            boxShadow:
+              "0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)",
           }}
         >
           <Flex align="center" justify="space-between" h="100%">

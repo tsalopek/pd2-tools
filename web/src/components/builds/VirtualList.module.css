@@ -15,7 +15,8 @@
   background: transparent;
 }
 
-:where([data-mantine-color-scheme='light']) .virtualList::-webkit-scrollbar-thumb {
+:where([data-mantine-color-scheme="light"])
+  .virtualList::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.4);
   border-radius: 4px;
   border: 2px solid transparent;
@@ -23,11 +24,13 @@
   transition: background-color 150ms ease;
 }
 
-:where([data-mantine-color-scheme='light']) .virtualList::-webkit-scrollbar-thumb:hover {
+:where([data-mantine-color-scheme="light"])
+  .virtualList::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-:where([data-mantine-color-scheme='dark']) .virtualList::-webkit-scrollbar-thumb {
+:where([data-mantine-color-scheme="dark"])
+  .virtualList::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.4);
   border-radius: 4px;
   border: 2px solid transparent;
@@ -35,17 +38,18 @@
   transition: background-color 150ms ease;
 }
 
-:where([data-mantine-color-scheme='dark']) .virtualList::-webkit-scrollbar-thumb:hover {
+:where([data-mantine-color-scheme="dark"])
+  .virtualList::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.5);
 }
 
 @supports not selector(::-webkit-scrollbar) {
-  :where([data-mantine-color-scheme='light']) .virtualList {
+  :where([data-mantine-color-scheme="light"]) .virtualList {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
   }
 
-  :where([data-mantine-color-scheme='dark']) .virtualList {
+  :where([data-mantine-color-scheme="dark"]) .virtualList {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
   }

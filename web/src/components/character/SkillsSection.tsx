@@ -72,7 +72,9 @@ export function SkillsSection({
         >
           {Object.entries(
             groupBy(skills, (skill) => skillCategories.get(skill.skill))
-          ).map(([category, categorySkills]) => (
+          )
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([category, categorySkills]) => (
             <div key={category} style={{ marginBottom: "14px" }}>
               <Text
                 fw={600}

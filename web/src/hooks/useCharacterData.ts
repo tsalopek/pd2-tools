@@ -41,17 +41,30 @@ export function useCharacterData(
       isLoading.current = true;
 
       try {
-        const [charactersData, itemsData, skillsData, mercTypesData, mercItemsData] = await Promise.all([
-          charactersAPI.getCharacters(filters.gameMode, {
-            requiredClasses: filters.classFilter,
-            requiredItems: filters.itemFilter,
-            requiredSkills:
-              filters.skillFilter.length > 0 ? filters.skillFilter : undefined,
-            requiredMercTypes: filters.mercTypeFilter,
-            requiredMercItems: filters.mercItemFilter,
-            levelRange: { min: filters.minLevel, max: filters.maxLevel },
-            season: filters.season,
-          }, 1, 40),
+        const [
+          charactersData,
+          itemsData,
+          skillsData,
+          mercTypesData,
+          mercItemsData,
+        ] = await Promise.all([
+          charactersAPI.getCharacters(
+            filters.gameMode,
+            {
+              requiredClasses: filters.classFilter,
+              requiredItems: filters.itemFilter,
+              requiredSkills:
+                filters.skillFilter.length > 0
+                  ? filters.skillFilter
+                  : undefined,
+              requiredMercTypes: filters.mercTypeFilter,
+              requiredMercItems: filters.mercItemFilter,
+              levelRange: { min: filters.minLevel, max: filters.maxLevel },
+              season: filters.season,
+            },
+            1,
+            40
+          ),
           charactersAPI.getItemUsage(filters.gameMode, {
             requiredClasses: filters.classFilter,
             levelRange: { min: filters.minLevel, max: filters.maxLevel },
