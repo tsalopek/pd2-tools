@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import rateLimit from "express-rate-limit";
 import { characterDB } from "../database";
 import { validateSeason } from "../middleware/validation";
 import { config, logger as mainLogger } from "../config";
@@ -15,6 +16,14 @@ import fetch from "node-fetch";
 
 const logger = mainLogger.createNamedLogger("API");
 const router = Router();
+
+const characterRefreshLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: "Too many character refresh requests. Please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // GET /api/characters - Get filtered characters
 router.get(
@@ -657,7 +666,7 @@ router.get(
 );
 
 // POST /api/characters/:name/refresh - Manually refresh character data
-router.post("/:name/refresh", async (req: Request, res: Response) => {
+router.post("/:name/refresh", characterRefreshLimiter, async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
     const now = Date.now();
