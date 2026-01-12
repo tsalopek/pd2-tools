@@ -11,11 +11,13 @@ import {
   Modal,
   RangeSlider,
   Tooltip,
+  Alert,
 } from "@mantine/core";
-import { IconX, IconSettings, IconInfoCircle } from "@tabler/icons-react";
+import { IconX, IconSettings, IconInfoCircle, IconUserPlus } from "@tabler/icons-react";
 import { useMediaQuery } from "@mantine/hooks";
 import Cookies from "js-cookie";
 import debounce from "lodash/debounce";
+import { accountsAPI } from "../../../api";
 import type { BuildsComponentProps } from "../types";
 
 interface SettingsModalProps {
@@ -100,6 +102,124 @@ function SettingsModal({
   );
 }
 
+interface AccountQueueModalProps {
+  opened: boolean;
+  onClose: () => void;
+}
+
+function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
+  const [accountName, setAccountName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [queuedAccountName, setQueuedAccountName] = useState<string | null>(null);
+  const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    setQueuedAccountName(null);
+    setEstimatedTime(null);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await accountsAPI.queueAccount(accountName);
+
+      // Format estimated time
+      const estimatedMinutes = Math.ceil(response.estimatedSeconds / 60);
+      const timeString = estimatedMinutes > 1
+        ? `${estimatedMinutes} minutes`
+        : `${response.estimatedSeconds} seconds`;
+
+      setQueuedAccountName(response.accountName);
+      setEstimatedTime(timeString);
+      setSuccessMessage(response.message);
+      setAccountName("");
+    } catch (error: any) {
+      setErrorMessage(error.data?.error || error.message || "Failed to queue account");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setAccountName("");
+    setQueuedAccountName(null);
+    setEstimatedTime(null);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title="Add Account to Scrape Queue"
+      size="md"
+      styles={{
+        title: { fontWeight: 600 },
+        body: { paddingTop: 10 },
+      }}
+    >
+      <div>
+        <Text size="sm" mb="md" c="dimmed">
+          Enter an <strong>account name</strong> (not character name) to add it to pd2.tools. All ladder characters level 80+ on this account will be
+          added to the website.
+        </Text>
+
+        <TextInput
+          label="Account Name (NOT character name)"
+          placeholder="Enter account name"
+          value={accountName}
+          onChange={(e) => setAccountName(e.target.value)}
+          disabled={isLoading}
+          mb="md"
+        />
+
+        {queuedAccountName && estimatedTime && successMessage && (
+          <Alert color="green" mb="md">
+            <Text size="sm" mb="xs">
+              {successMessage}. Characters will be processed in approximately{" "}
+              <strong>{estimatedTime}</strong>.
+            </Text>
+            <Text size="sm">
+              After that time, check your characters at:{" "}
+              <a
+                href={`/builds/account/${queuedAccountName}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "inherit", fontWeight: 600 }}
+              >
+                /builds/account/{queuedAccountName}
+              </a>
+            </Text>
+          </Alert>
+        )}
+
+        {errorMessage && (
+          <Alert color="red" mb="md">
+            {errorMessage}
+          </Alert>
+        )}
+
+        <Flex gap="sm" justify="flex-end">
+          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!accountName.trim() || isLoading}
+            loading={isLoading}
+          >
+            Add to Queue
+          </Button>
+        </Flex>
+      </div>
+    </Modal>
+  );
+}
+
 export default function ClassBar({
   data,
   filters,
@@ -108,6 +228,7 @@ export default function ClassBar({
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [searchInput, setSearchInput] = useState(filters.searchQuery);
   const [settingsOpened, setSettingsOpened] = useState(false);
+  const [accountQueueOpened, setAccountQueueOpened] = useState(false);
   const searchTimeout = useRef<NodeJS.Timeout>();
 
   const handleGameModeChange = (value: string | null) => {
@@ -224,14 +345,15 @@ export default function ClassBar({
         </Flex>
       </Card>
 
-      <div style={{ display: "flex", gap: "16px" }}>
+      <div style={{ display: isMobile ? "block" : "flex", gap: "16px" }}>
         <Card
           withBorder
           style={{
-            width: "185px",
+            width: isMobile ? "100%" : "185px",
             height: "60px",
             boxShadow:
               "0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)",
+            marginBottom: isMobile ? "16px" : "0",
           }}
         >
           <Flex justify="center" align="center" h="100%">
@@ -257,14 +379,15 @@ export default function ClassBar({
         <Card
           withBorder
           style={{
-            flex: 1,
+            flex: isMobile ? "none" : 1,
+            width: isMobile ? "100%" : "auto",
             height: "60px",
             boxShadow:
               "0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)",
           }}
         >
           <Flex align="center" justify="space-between" h="100%">
-            {isMobile ? null : (
+            {!isMobile && (
               <Text>
                 Found{" "}
                 <Text span fw={700}>
@@ -273,7 +396,7 @@ export default function ClassBar({
                 characters
               </Text>
             )}
-            <Flex gap="md">
+            <Flex gap="md" style={{ marginLeft: isMobile ? "0" : "auto" }}>
               <Button
                 variant="outline"
                 onClick={() => setSettingsOpened(true)}
@@ -281,6 +404,15 @@ export default function ClassBar({
               >
                 Settings
               </Button>
+              {!isMobile && (
+                <Button
+                  variant="outline"
+                  onClick={() => setAccountQueueOpened(true)}
+                  leftSection={<IconUserPlus size={16} />}
+                >
+                  Add Account
+                </Button>
+              )}
               <Button
                 variant="outline"
                 color="red"
@@ -300,6 +432,10 @@ export default function ClassBar({
         onLevelChange={(min, max) =>
           updateFilters({ minLevel: min, maxLevel: max })
         }
+      />
+      <AccountQueueModal
+        opened={accountQueueOpened}
+        onClose={() => setAccountQueueOpened(false)}
       />
     </SimpleGrid>
   );

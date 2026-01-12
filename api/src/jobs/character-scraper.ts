@@ -51,11 +51,11 @@ function sleep(ms: number): Promise<void> {
 }
 
 function isInBlockedTime(): boolean {
-  const pstDate = new Date(
+  /*const pstDate = new Date(
     new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
   );
-  const hour = pstDate.getHours();
-  return hour >= CONFIG.BLOCKED_HOURS.start && hour < CONFIG.BLOCKED_HOURS.end;
+  const hour = pstDate.getHours();*/
+  return false //hour >= CONFIG.BLOCKED_HOURS.start && hour < CONFIG.BLOCKED_HOURS.end; not needed for end season(?)
 }
 
 function formatUptime(uptimeInSeconds: number): string {
@@ -156,7 +156,7 @@ class ApiClient {
   async getAllCharsFromAccount(accName: string): Promise<string[]> {
     try {
       const res = (await this.makeRequest(
-        `https://api.projectdiablo2.com/game/account/${accName}`
+        `https://api.projectdiablo2.com/game/account/${encodeURIComponent(accName)}`
       )) as { characters?: string[] };
       return res && Array.isArray(res.characters) ? res.characters : [];
     } catch (error) {
@@ -171,7 +171,7 @@ class ApiClient {
   async getChar(charName: string): Promise<CharacterApiResponse | null> {
     try {
       return (await this.makeRequest(
-        `https://api.projectdiablo2.com/game/character/${charName}`
+        `https://api.projectdiablo2.com/game/character/${encodeURIComponent(charName)}`
       )) as CharacterApiResponse;
     } catch (error) {
       logger.error(`getChar for ${charName}: Fetch failed`, error);
@@ -456,11 +456,115 @@ class RateMonitor {
   }
 }
 
+class PriorityAccountProcessor {
+  private readonly apiClient: ApiClient;
+  private readonly priorityAccountsFile = "./data/priority-accounts.json";
+  private isRunning = false;
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  constructor(apiClient: ApiClient, _profanityFilter: ProfanityFilter) {
+    this.apiClient = apiClient;
+  }
+
+  async run(
+    queue: CharacterQueueItem[],
+    seenAccMap: Map<string, number>,
+    nlCharSet: Set<string>
+  ): Promise<void> {
+    if (this.isRunning) {
+      logger.debug("Priority processor: Already running, skipping.");
+      return;
+    }
+
+    // Read priority accounts file
+    if (!fs.existsSync(this.priorityAccountsFile)) {
+      return; // No file, nothing to do
+    }
+
+    let priorityAccounts: Array<{
+      accountName: string;
+      requestedAt: number;
+      requestedByIp: string;
+    }> = [];
+
+    try {
+      const data = fs.readFileSync(this.priorityAccountsFile, "utf-8");
+      priorityAccounts = JSON.parse(data);
+    } catch (error) {
+      logger.error("Priority processor: Error reading priority accounts file:", error);
+      return;
+    }
+
+    if (priorityAccounts.length === 0) {
+      return; // Empty file, nothing to do
+    }
+
+    this.isRunning = true;
+    logger.info(`Priority processor: Processing ${priorityAccounts.length} priority accounts.`);
+
+    try {
+      for (const { accountName } of priorityAccounts) {
+        if (!this.isValidAccountName(accountName)) {
+          logger.warn(`Priority processor: Skipping invalid account name: '${accountName}'`);
+          continue;
+        }
+
+        // Fetch characters from account
+        const characterNames = await this.apiClient.getAllCharsFromAccount(accountName);
+        seenAccMap.set(accountName, Date.now());
+
+        if (characterNames.length > 0) {
+          logger.info(`Priority processor: Account ${accountName} has ${characterNames.length} characters. Adding all to priority queue.`);
+
+          for (const charName of characterNames) {
+            if (!this.isValidCharacterName(charName)) {
+              logger.warn(`Priority processor: Skipping invalid character name '${charName}'`);
+              continue;
+            }
+            if (nlCharSet.has(charName)) {
+              logger.debug(`Priority processor: Skipping known NL/bricked char ${charName}.`);
+              continue;
+            }
+
+            // Push to FRONT of queue - ConsumerWorker will handle validation
+            queue.unshift({
+              characterName: charName,
+              sourceAccount: accountName,
+            });
+          }
+
+          logger.info(`Priority processor: Added ${characterNames.length} characters from ${accountName} to priority queue.`);
+        }
+
+        // Sleep 1 second between account API calls to respect rate limit
+        await sleep(1000);
+      }
+
+      // Clear priority accounts file after processing
+      fs.writeFileSync(this.priorityAccountsFile, JSON.stringify([], null, 2));
+      logger.info(`Priority processor: Processed and cleared ${priorityAccounts.length} priority accounts.`);
+    } catch (error) {
+      logger.error("Priority processor: Error processing accounts:", error);
+    } finally {
+      this.isRunning = false;
+    }
+  }
+
+  private isValidAccountName(accountName: unknown): accountName is string {
+    return typeof accountName === "string" && accountName.trim() !== "";
+  }
+
+  private isValidCharacterName(charName: unknown): charName is string {
+    return typeof charName === "string" && charName.trim() !== "";
+  }
+}
+
 class CharacterScraper {
   private readonly apiClient: ApiClient;
   private readonly profanityFilter: ProfanityFilter;
   private readonly persistence: PersistenceManager;
   private readonly producerJob: ProducerJob;
+  private readonly priorityProcessor: PriorityAccountProcessor;
   private readonly consumerWorker: ConsumerWorker;
   private readonly rateMonitor: RateMonitor;
 
@@ -473,6 +577,7 @@ class CharacterScraper {
     this.profanityFilter = new ProfanityFilter();
     this.persistence = new PersistenceManager(CONFIG.PERSISTENCE_FILE);
     this.producerJob = new ProducerJob(this.apiClient, this.profanityFilter);
+    this.priorityProcessor = new PriorityAccountProcessor(this.apiClient, this.profanityFilter);
     this.consumerWorker = new ConsumerWorker(this.apiClient);
     this.rateMonitor = new RateMonitor(this.apiClient);
   }
@@ -497,6 +602,11 @@ class CharacterScraper {
       this.runProducerJob();
     });
 
+    // Schedule priority account processor (runs every 1 minute)
+    cron.schedule("*/1 * * * *", () => {
+      this.runPriorityProcessor();
+    });
+
     // Start consumer worker (runs continuously)
     this.startConsumerWorker();
 
@@ -509,6 +619,14 @@ class CharacterScraper {
 
   private async runProducerJob(): Promise<void> {
     await this.producerJob.run(
+      this.characterQueue,
+      this.seenAccMap,
+      this.nlCharSet
+    );
+  }
+
+  private async runPriorityProcessor(): Promise<void> {
+    await this.priorityProcessor.run(
       this.characterQueue,
       this.seenAccMap,
       this.nlCharSet
@@ -539,6 +657,9 @@ class CharacterScraper {
   private logStartupInfo(): void {
     logger.info(
       "Character Scraper starting. Producer cron job scheduled for every 30 minutes."
+    );
+    logger.info(
+      "Priority account processor scheduled for every 1 minute."
     );
     logger.info(
       `Account check cooldown: ${CONFIG.MS_BETWEEN_ACCOUNT_CHECKS / (60 * 60 * 1000)} hours.`
