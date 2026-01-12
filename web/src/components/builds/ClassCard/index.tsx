@@ -137,7 +137,7 @@ export default function ClassCard({
               zIndex: 0,
             }}
           />
-          <Tooltip label={name} position="right" openDelay={500} withArrow>
+          <Tooltip label={name} position="right" openDelay={250} withArrow>
             <Flex
               justify="space-between"
               align="center"

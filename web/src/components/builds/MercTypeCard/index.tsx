@@ -156,7 +156,7 @@ export default function MercTypeCard({ data, filters, updateFilters }: Props) {
           <Tooltip
             label={displayName}
             position="right"
-            openDelay={500}
+            openDelay={250}
             withArrow
           >
             <Flex
