@@ -9,7 +9,11 @@ import {
   Anchor,
   Select,
 } from "@mantine/core";
-import { IconChevronLeft, IconChevronRight, IconExternalLink } from "@tabler/icons-react";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconExternalLink,
+} from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import RelativeTime from "@yaireo/relative-time";
 import RefreshButton from "./RefreshButton";
@@ -203,7 +207,15 @@ export function CharacterHeader({
                   c="blue"
                   style={{ display: "block", marginTop: "4px" }}
                 >
-                  PD2 Armory <IconExternalLink size={12} style={{ display: "inline", position: "relative", top: "2px" }} />
+                  PD2 Armory{" "}
+                  <IconExternalLink
+                    size={12}
+                    style={{
+                      display: "inline",
+                      position: "relative",
+                      top: "2px",
+                    }}
+                  />
                 </Anchor>
               </div>
               <div
