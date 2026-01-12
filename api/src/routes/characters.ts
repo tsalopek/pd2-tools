@@ -718,7 +718,7 @@ router.post("/:name/refresh", async (req: Request, res: Response) => {
     logger.debug(`Invalidated ${deletedKeys} cache keys for character: ${name}`);
 
     // Fetch and return updated character
-    let updatedChar = await characterDB.getCharacterByName(gameMode, name, season);
+    const updatedChar = await characterDB.getCharacterByName(gameMode, name, season);
 
     if (!updatedChar) {
       return res.status(500).json({
