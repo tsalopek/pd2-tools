@@ -553,14 +553,14 @@ export default function LeaderboardPage() {
   );
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<
     string | null
-  >(searchParams.get("tab") || "level99");
+  >(searchParams.get("tab") || "mirrored");
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (gameMode !== "softcore") params.set("mode", gameMode);
     if (season !== 12) params.set("season", season.toString());
-    if (activeLeaderboardTab !== "level99")
-      params.set("tab", activeLeaderboardTab || "level99");
+    if (activeLeaderboardTab !== "mirrored")
+      params.set("tab", activeLeaderboardTab || "mirrored");
     setSearchParams(params, { replace: true });
   }, [gameMode, season, activeLeaderboardTab, setSearchParams]);
 
@@ -667,19 +667,19 @@ export default function LeaderboardPage() {
               onChange={setActiveLeaderboardTab}
             >
               <Tabs.List>
-                <Tabs.Tab value="level99">Most Level 99 Accounts</Tabs.Tab>
                 <Tabs.Tab value="mirrored">Most Mirrored Items</Tabs.Tab>
+                <Tabs.Tab value="level99">Most Level 99 Accounts</Tabs.Tab>
               </Tabs.List>
-
-              <Tabs.Panel value="level99" pt="md">
-                <Level99LeaderboardTable gameMode={gameMode} season={season} />
-              </Tabs.Panel>
 
               <Tabs.Panel value="mirrored" pt="md">
                 <MirroredItemLeaderboardTable
                   gameMode={gameMode}
                   season={season}
                 />
+              </Tabs.Panel>
+
+              <Tabs.Panel value="level99" pt="md">
+                <Level99LeaderboardTable gameMode={gameMode} season={season} />
               </Tabs.Panel>
             </Tabs>
           )}
