@@ -5,6 +5,7 @@ import characterRoutes from "./characters";
 import economyRoutes from "./economy";
 import statisticsRoutes from "./statistics";
 import healthRoutes from "./health";
+import leaderboardRoutes from "./leaderboard";
 import { characterDB, economyDB } from "../database";
 
 jest.mock("../utils/cache", () => ({
@@ -29,6 +30,8 @@ jest.mock("../database", () => ({
     analyzeMercTypeUsage: jest.fn(),
     analyzeMercItemUsage: jest.fn(),
     getOnlinePlayersHistory: jest.fn(),
+    getLevel99Leaderboard: jest.fn(),
+    getMirroredLeaderboard: jest.fn(),
   },
   economyDB: {
     getUniqueItemNames: jest.fn(),
@@ -66,6 +69,7 @@ describe("API Routes", () => {
     app.use("/api/v1/economy", economyRoutes);
     app.use("/api/v1/statistics", statisticsRoutes);
     app.use("/api/v1/health", healthRoutes);
+    app.use("/api/v1/leaderboard", leaderboardRoutes);
 
     jest.clearAllMocks();
   });
@@ -1250,6 +1254,98 @@ describe("API Routes", () => {
           status: "ok",
           timestamp: expect.any(String),
           uptime: expect.any(Number),
+        });
+      });
+    });
+  });
+
+  describe("Leaderboard Routes", () => {
+    describe("GET /api/v1/leaderboard/level99", () => {
+      it("should return level 99 leaderboard", async () => {
+        const mockAccounts = [
+          {
+            account_name: "TopAccount",
+            count: 5,
+            game_mode: "softcore",
+            season: 12,
+            last_updated: Date.now(),
+          },
+        ];
+
+        (characterDB.getLevel99Leaderboard as jest.Mock).mockResolvedValue(
+          mockAccounts
+        );
+
+        const response = await request(app)
+          .get("/api/v1/leaderboard/level99")
+          .expect(200);
+
+        expect(response.body).toEqual({
+          leaderboard: mockAccounts,
+          gameMode: "softcore",
+          season: 12,
+          total: 1,
+        });
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.getLevel99Leaderboard as jest.Mock).mockRejectedValue(
+          new Error("Database error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/leaderboard/level99")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: "Failed to fetch level 99 leaderboard",
+        });
+      });
+    });
+
+    describe("GET /api/v1/leaderboard/mirrored", () => {
+      it("should return mirrored item leaderboard", async () => {
+        const mockItems = [
+          {
+            item_name: "Harlequin Crest",
+            item_base_name: "Shako",
+            count: 15,
+            properties_signature: "sig123",
+            example_item_json: { name: "Harlequin Crest" },
+            example_character_name: "TestChar",
+            game_mode: "softcore",
+            season: 12,
+            last_updated: Date.now(),
+          },
+        ];
+
+        (characterDB.getMirroredLeaderboard as jest.Mock).mockResolvedValue(
+          mockItems
+        );
+
+        const response = await request(app)
+          .get("/api/v1/leaderboard/mirrored")
+          .expect(200);
+
+        expect(response.body).toEqual({
+          leaderboard: mockItems,
+          gameMode: "softcore",
+          season: 12,
+          total: 1,
+        });
+      });
+
+      it("should handle errors", async () => {
+        (characterDB.getMirroredLeaderboard as jest.Mock).mockRejectedValue(
+          new Error("Database error")
+        );
+
+        const response = await request(app)
+          .get("/api/v1/leaderboard/mirrored")
+          .expect(500);
+
+        expect(response.body).toEqual({
+          error: "Failed to fetch mirrored leaderboard",
         });
       });
     });

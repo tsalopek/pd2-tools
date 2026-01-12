@@ -14,6 +14,7 @@ import Account from "./pages/Account";
 import Economy from "./pages/Economy";
 import ItemDetail from "./pages/ItemDetail";
 import Statistics from "./pages/Statistics";
+import Leaderboard from "./pages/Leaderboard";
 import CharacterExport from "./pages/CharacterExport";
 import CorruptedZoneTracker from "./pages/CorruptedZoneTracker";
 import About from "./pages/About";
@@ -90,6 +91,9 @@ function App() {
 
                   {/* Statistics */}
                   <Route path="/statistics" element={<Statistics />} />
+
+                  {/* Leaderboard */}
+                  <Route path="/leaderboard" element={<Leaderboard />} />
 
                   {/* Tools */}
                   <Route

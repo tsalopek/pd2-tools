@@ -4,7 +4,11 @@ import { validateSeason } from "../middleware/validation";
 import { config, logger as mainLogger } from "../config";
 import CharacterStatParser from "../utils/character-stats";
 import { autoCache } from "../middleware/auto-cache";
-import { getCacheValue, setCacheValue, deleteCachePattern } from "../utils/cache";
+import {
+  getCacheValue,
+  setCacheValue,
+  deleteCachePattern,
+} from "../utils/cache";
 import { calculateTotalSkills } from "../utils/skill-calculator";
 import { CharacterResponse } from "../types";
 import fetch from "node-fetch";
@@ -664,7 +668,9 @@ router.post("/:name/refresh", async (req: Request, res: Response) => {
 
     // Check 15-minute rate limit
     if (lastRefresh && now - lastRefresh < 15 * 60 * 1000) {
-      const retryAfter = Math.ceil((15 * 60 * 1000 - (now - lastRefresh)) / 1000);
+      const retryAfter = Math.ceil(
+        (15 * 60 * 1000 - (now - lastRefresh)) / 1000
+      );
       return res.status(429).json({
         error: "Character was refreshed recently. Please try again later.",
         retryAfter,
@@ -700,12 +706,18 @@ router.post("/:name/refresh", async (req: Request, res: Response) => {
     const season = charData.character.season || config.currentSeason;
 
     // Get existing character to preserve accountName
-    const existingChar = await characterDB.getCharacterByName(gameMode, name, season);
+    const existingChar = await characterDB.getCharacterByName(
+      gameMode,
+      name,
+      season
+    );
     const accountName = existingChar?.accountName;
 
     // Set lastUpdated and calculate realSkills (same as scraper does)
     charData.lastUpdated = now;
-    charData.realSkills = calculateTotalSkills(charData as unknown as CharacterResponse);
+    charData.realSkills = calculateTotalSkills(
+      charData as unknown as CharacterResponse
+    );
 
     // Ingest character data with preserved accountName
     await characterDB.ingestCharacter(charData, gameMode, season, accountName);
@@ -715,10 +727,16 @@ router.post("/:name/refresh", async (req: Request, res: Response) => {
 
     // Invalidate API cache for this character (cache keys are auto:/:name:<hash>)
     const deletedKeys = await deleteCachePattern(`auto:/${name}:*`);
-    logger.debug(`Invalidated ${deletedKeys} cache keys for character: ${name}`);
+    logger.debug(
+      `Invalidated ${deletedKeys} cache keys for character: ${name}`
+    );
 
     // Fetch and return updated character
-    const updatedChar = await characterDB.getCharacterByName(gameMode, name, season);
+    const updatedChar = await characterDB.getCharacterByName(
+      gameMode,
+      name,
+      season
+    );
 
     if (!updatedChar) {
       return res.status(500).json({

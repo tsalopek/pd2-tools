@@ -24,7 +24,9 @@ export default function RefreshButton({
       });
     } catch (error) {
       if (error instanceof APIError && error.status === 429) {
-        setErrorMessage("This character was refreshed too recently. Please try again later.");
+        setErrorMessage(
+          "This character was refreshed too recently. Please try again later."
+        );
       } else {
         setErrorMessage("Failed to refresh character");
         console.error("Failed to refresh character:", error);
@@ -42,7 +44,13 @@ export default function RefreshButton({
       loading={isLoading}
       disabled={isLoading}
       color="gray"
-      style={{ width: "14px", height: "14px", minWidth: "14px", minHeight: "14px", top: "2px" }}
+      style={{
+        width: "14px",
+        height: "14px",
+        minWidth: "14px",
+        minHeight: "14px",
+        top: "2px",
+      }}
     >
       <IconRefresh size={10} />
     </ActionIcon>
@@ -51,7 +59,11 @@ export default function RefreshButton({
   const tooltipLabel = errorMessage || "Refresh character data";
 
   return (
-    <Tooltip label={tooltipLabel} position="left" color={errorMessage ? "red" : "dark"}>
+    <Tooltip
+      label={tooltipLabel}
+      position="left"
+      color={errorMessage ? "red" : "dark"}
+    >
       {button}
     </Tooltip>
   );

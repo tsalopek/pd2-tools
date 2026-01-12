@@ -58,6 +58,7 @@ const links = [
     ],
   },
   { link: "/statistics", label: "Statistics" },
+  { link: "/leaderboard", label: "Leaderboard" },
 ];
 
 export function HeaderSearch() {

@@ -20,6 +20,7 @@ import {
   IconTrendingUp,
   IconChartBar,
   IconAlarm,
+  IconTrophy,
 } from "@tabler/icons-react";
 import CountUp from "react-countup";
 import { charactersAPI, economyAPI } from "../api";
@@ -97,6 +98,15 @@ const tools = [
     icon: <IconChartBar size={28} />,
     path: "/statistics",
     buttonLabel: "View Statistics",
+    disabled: false,
+  },
+  {
+    name: "Leaderboard",
+    description:
+      "Track top players, items, and achievements across Project Diablo 2.",
+    icon: <IconTrophy size={28} />,
+    path: "/leaderboard",
+    buttonLabel: "View Leaderboard",
     disabled: false,
   },
 ];
@@ -298,7 +308,7 @@ export default function Home() {
                   order={3}
                   style={{ height: 28, display: "flex", alignItems: "center" }}
                 >
-                  5
+                  6
                 </Title>
               )}
             </Stack>

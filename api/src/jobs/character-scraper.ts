@@ -55,7 +55,7 @@ function isInBlockedTime(): boolean {
     new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
   );
   const hour = pstDate.getHours();*/
-  return false //hour >= CONFIG.BLOCKED_HOURS.start && hour < CONFIG.BLOCKED_HOURS.end; not needed for end season(?)
+  return false; //hour >= CONFIG.BLOCKED_HOURS.start && hour < CONFIG.BLOCKED_HOURS.end; not needed for end season(?)
 }
 
 function formatUptime(uptimeInSeconds: number): string {
@@ -491,7 +491,10 @@ class PriorityAccountProcessor {
       const data = fs.readFileSync(this.priorityAccountsFile, "utf-8");
       priorityAccounts = JSON.parse(data);
     } catch (error) {
-      logger.error("Priority processor: Error reading priority accounts file:", error);
+      logger.error(
+        "Priority processor: Error reading priority accounts file:",
+        error
+      );
       return;
     }
 
@@ -500,29 +503,40 @@ class PriorityAccountProcessor {
     }
 
     this.isRunning = true;
-    logger.info(`Priority processor: Processing ${priorityAccounts.length} priority accounts.`);
+    logger.info(
+      `Priority processor: Processing ${priorityAccounts.length} priority accounts.`
+    );
 
     try {
       for (const { accountName } of priorityAccounts) {
         if (!this.isValidAccountName(accountName)) {
-          logger.warn(`Priority processor: Skipping invalid account name: '${accountName}'`);
+          logger.warn(
+            `Priority processor: Skipping invalid account name: '${accountName}'`
+          );
           continue;
         }
 
         // Fetch characters from account
-        const characterNames = await this.apiClient.getAllCharsFromAccount(accountName);
+        const characterNames =
+          await this.apiClient.getAllCharsFromAccount(accountName);
         seenAccMap.set(accountName, Date.now());
 
         if (characterNames.length > 0) {
-          logger.info(`Priority processor: Account ${accountName} has ${characterNames.length} characters. Adding all to priority queue.`);
+          logger.info(
+            `Priority processor: Account ${accountName} has ${characterNames.length} characters. Adding all to priority queue.`
+          );
 
           for (const charName of characterNames) {
             if (!this.isValidCharacterName(charName)) {
-              logger.warn(`Priority processor: Skipping invalid character name '${charName}'`);
+              logger.warn(
+                `Priority processor: Skipping invalid character name '${charName}'`
+              );
               continue;
             }
             if (nlCharSet.has(charName)) {
-              logger.debug(`Priority processor: Skipping known NL/bricked char ${charName}.`);
+              logger.debug(
+                `Priority processor: Skipping known NL/bricked char ${charName}.`
+              );
               continue;
             }
 
@@ -533,7 +547,9 @@ class PriorityAccountProcessor {
             });
           }
 
-          logger.info(`Priority processor: Added ${characterNames.length} characters from ${accountName} to priority queue.`);
+          logger.info(
+            `Priority processor: Added ${characterNames.length} characters from ${accountName} to priority queue.`
+          );
         }
 
         // Sleep 1 second between account API calls to respect rate limit
@@ -542,7 +558,9 @@ class PriorityAccountProcessor {
 
       // Clear priority accounts file after processing
       fs.writeFileSync(this.priorityAccountsFile, JSON.stringify([], null, 2));
-      logger.info(`Priority processor: Processed and cleared ${priorityAccounts.length} priority accounts.`);
+      logger.info(
+        `Priority processor: Processed and cleared ${priorityAccounts.length} priority accounts.`
+      );
     } catch (error) {
       logger.error("Priority processor: Error processing accounts:", error);
     } finally {
@@ -577,7 +595,10 @@ class CharacterScraper {
     this.profanityFilter = new ProfanityFilter();
     this.persistence = new PersistenceManager(CONFIG.PERSISTENCE_FILE);
     this.producerJob = new ProducerJob(this.apiClient, this.profanityFilter);
-    this.priorityProcessor = new PriorityAccountProcessor(this.apiClient, this.profanityFilter);
+    this.priorityProcessor = new PriorityAccountProcessor(
+      this.apiClient,
+      this.profanityFilter
+    );
     this.consumerWorker = new ConsumerWorker(this.apiClient);
     this.rateMonitor = new RateMonitor(this.apiClient);
   }
@@ -658,9 +679,7 @@ class CharacterScraper {
     logger.info(
       "Character Scraper starting. Producer cron job scheduled for every 30 minutes."
     );
-    logger.info(
-      "Priority account processor scheduled for every 1 minute."
-    );
+    logger.info("Priority account processor scheduled for every 1 minute.");
     logger.info(
       `Account check cooldown: ${CONFIG.MS_BETWEEN_ACCOUNT_CHECKS / (60 * 60 * 1000)} hours.`
     );
