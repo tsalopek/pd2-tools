@@ -605,7 +605,7 @@ export default function LeaderboardPage() {
             <Text size="sm">
               Leaderboard data may be incomplete or incorrect, particularly for
               Level 99 Accounts as we only recently started collecting this
-              data.
+              data. The number of mirror copies does not include the original or any copies that are not equipped (e.g. in stash or inventory) or on a character not listed on pd2.tools.
               <br />
               <br />
               All leaderboards update every 12 hours.
