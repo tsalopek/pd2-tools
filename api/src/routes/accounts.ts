@@ -84,7 +84,8 @@ router.post("/queue", accountQueueLimiter, (req: Request, res: Response) => {
   // Allow alphanumeric, underscores, hyphens
   if (!/^[a-zA-Z0-9_-]+$/.test(sanitized)) {
     return res.status(400).json({
-      error: "Account name can only contain letters, numbers, underscores, and hyphens",
+      error:
+        "Account name can only contain letters, numbers, underscores, and hyphens",
     });
   }
 

@@ -235,7 +235,36 @@ export default class CharacterDB_Postgres {
 
             -- Snapshot indexes
             CREATE INDEX IF NOT EXISTS idx_snapshots_char_time ON CharacterSnapshots(character_db_id, snapshot_timestamp DESC);
-            CREATE INDEX IF NOT EXISTS idx_snapshots_lookup ON CharacterSnapshots(game_mode_id, api_character_name, season, snapshot_timestamp DESC)
+            CREATE INDEX IF NOT EXISTS idx_snapshots_lookup ON CharacterSnapshots(game_mode_id, api_character_name, season, snapshot_timestamp DESC);
+
+            -- Leaderboard tables
+            CREATE TABLE IF NOT EXISTS AccountLevel99Leaderboard (
+                id SERIAL PRIMARY KEY,
+                account_name VARCHAR(100) NOT NULL,
+                count INTEGER NOT NULL,
+                game_mode VARCHAR(20) NOT NULL,
+                season INTEGER NOT NULL,
+                last_updated BIGINT NOT NULL,
+                UNIQUE (account_name, game_mode, season)
+            );
+
+            CREATE TABLE IF NOT EXISTS MirroredItemLeaderboard (
+                id SERIAL PRIMARY KEY,
+                item_name VARCHAR(100) NOT NULL,
+                item_base_name VARCHAR(100),
+                count INTEGER NOT NULL,
+                properties_signature TEXT NOT NULL,
+                example_item_json JSONB NOT NULL,
+                example_character_name VARCHAR(100) NOT NULL,
+                game_mode VARCHAR(20) NOT NULL,
+                season INTEGER NOT NULL,
+                last_updated BIGINT NOT NULL,
+                UNIQUE (season, game_mode, properties_signature)
+            );
+
+            -- Leaderboard indexes
+            CREATE INDEX IF NOT EXISTS idx_account_lb_count ON AccountLevel99Leaderboard(game_mode, season, count DESC);
+            CREATE INDEX IF NOT EXISTS idx_mirrored_lb_count ON MirroredItemLeaderboard(game_mode, season, count DESC);
         `);
   }
 
@@ -329,10 +358,9 @@ export default class CharacterDB_Postgres {
         "DELETE FROM CharacterSnapshots WHERE game_mode_id = $1",
         [gameModeId]
       );
-      await this.pool.query(
-        "DELETE FROM Characters WHERE game_mode_id = $1",
-        [gameModeId]
-      );
+      await this.pool.query("DELETE FROM Characters WHERE game_mode_id = $1", [
+        gameModeId,
+      ]);
     }
   }
 
@@ -1245,6 +1273,247 @@ export default class CharacterDB_Postgres {
       num_online_players: rows[0].num_online_players,
       timestamp: parseInt(rows[0].timestamp, 10),
     };
+  }
+
+  // Leaderboard methods
+  public async getSeasonGameModeCombinations(
+    minLevel?: number
+  ): Promise<Array<{ season: number; game_mode_id: number }>> {
+    const query = minLevel
+      ? `SELECT DISTINCT season, game_mode_id FROM Characters WHERE level >= $1`
+      : `SELECT DISTINCT season, game_mode_id FROM Characters`;
+    const params = minLevel ? [minLevel] : [];
+    const { rows } = await this.pool.query(query, params);
+    return rows;
+  }
+
+  public async getGameModeName(gameModeId: number): Promise<string> {
+    const { rows } = await this.pool.query<{ name: string }>(
+      `SELECT name FROM GameModes WHERE game_mode_id = $1`,
+      [gameModeId]
+    );
+    return rows[0]?.name.toLowerCase() || "softcore";
+  }
+
+  public async getGameModeId(gameModeName: string): Promise<number> {
+    const { rows } = await this.pool.query<{ game_mode_id: number }>(
+      `SELECT game_mode_id FROM GameModes WHERE name = $1`,
+      [gameModeName]
+    );
+    if (!rows[0]) {
+      throw new Error(`GameMode not found: ${gameModeName}`);
+    }
+    return rows[0].game_mode_id;
+  }
+
+  public async getCharactersForLeaderboard(
+    season: number,
+    gameModeId: number,
+    minLevel: number,
+    limit?: number,
+    offset?: number
+  ): Promise<Array<{ api_character_name: string; full_response_json: any }>> {
+    let query = `SELECT api_character_name, full_response_json
+       FROM Characters
+       WHERE season = $1 AND game_mode_id = $2 AND level >= $3`;
+
+    const params: any[] = [season, gameModeId, minLevel];
+
+    if (limit !== undefined) {
+      params.push(limit);
+      query += ` LIMIT $${params.length}`;
+    }
+
+    if (offset !== undefined) {
+      params.push(offset);
+      query += ` OFFSET $${params.length}`;
+    }
+
+    const { rows } = await this.pool.query(query, params);
+    return rows;
+  }
+
+  public async getCharacterCountForLeaderboard(
+    season: number,
+    gameModeId: number,
+    minLevel: number
+  ): Promise<number> {
+    const { rows } = await this.pool.query(
+      `SELECT COUNT(*) as count
+       FROM Characters
+       WHERE season = $1 AND game_mode_id = $2 AND level >= $3`,
+      [season, gameModeId, minLevel]
+    );
+    return Number(rows[0].count);
+  }
+
+  public async deleteLevel99LeaderboardEntries(
+    season: number,
+    gameMode: string
+  ): Promise<void> {
+    await this.pool.query(
+      `DELETE FROM AccountLevel99Leaderboard WHERE season = $1 AND game_mode = $2`,
+      [season, gameMode]
+    );
+  }
+
+  public async getLevel99AccountCounts(
+    season: number,
+    gameModeId: number,
+    limit: number
+  ): Promise<Array<{ account_name: string; count: number }>> {
+    const { rows } = await this.pool.query(
+      `SELECT account_name, COUNT(*) as count
+       FROM Characters
+       WHERE season = $1 AND game_mode_id = $2 AND level = 99 AND account_name IS NOT NULL
+       GROUP BY account_name
+       ORDER BY count DESC
+       LIMIT $3`,
+      [season, gameModeId, limit]
+    );
+    return rows.map((row) => ({
+      account_name: row.account_name,
+      count: Number(row.count),
+    }));
+  }
+
+  public async insertLevel99LeaderboardEntries(
+    entries: Array<{
+      accountName: string;
+      count: number;
+      gameMode: string;
+      season: number;
+    }>,
+    lastUpdated: number
+  ): Promise<void> {
+    if (entries.length === 0) return;
+
+    const values: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    for (const entry of entries) {
+      values.push(
+        `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${
+          paramIndex + 3
+        }, $${paramIndex + 4})`
+      );
+
+      params.push(
+        entry.accountName,
+        entry.count,
+        entry.gameMode,
+        entry.season,
+        lastUpdated
+      );
+
+      paramIndex += 5;
+    }
+
+    await this.pool.query(
+      `INSERT INTO AccountLevel99Leaderboard (
+        account_name, count, game_mode, season, last_updated
+      )
+      VALUES ${values.join(", ")}
+      ON CONFLICT (account_name, game_mode, season)
+      DO UPDATE SET count = EXCLUDED.count, last_updated = EXCLUDED.last_updated`,
+      params
+    );
+  }
+
+  public async getLevel99Leaderboard(
+    gameMode: string,
+    season: number
+  ): Promise<any[]> {
+    const { rows } = await this.pool.query(
+      `SELECT *
+       FROM AccountLevel99Leaderboard
+       WHERE game_mode = $1 AND season = $2
+       ORDER BY count DESC
+       LIMIT 10`,
+      [gameMode, season]
+    );
+    return rows;
+  }
+
+  public async deleteMirroredLeaderboardEntries(
+    season: number,
+    gameMode: string
+  ): Promise<void> {
+    await this.pool.query(
+      `DELETE FROM MirroredItemLeaderboard WHERE season = $1 AND game_mode = $2`,
+      [season, gameMode]
+    );
+  }
+
+  public async insertMirroredLeaderboardEntries(
+    entries: Array<{
+      itemName: string;
+      itemBaseName: string;
+      count: number;
+      propertiesSignature: string;
+      exampleItemJson: any;
+      exampleCharacterName: string;
+      gameMode: string;
+      season: number;
+    }>,
+    lastUpdated: number
+  ): Promise<void> {
+    if (entries.length === 0) return;
+
+    const values: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    for (const entry of entries) {
+      values.push(
+        `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${
+          paramIndex + 3
+        }, $${paramIndex + 4}, $${paramIndex + 5}, $${paramIndex + 6}, $${
+          paramIndex + 7
+        }, $${paramIndex + 8})`
+      );
+
+      params.push(
+        entry.itemName,
+        entry.itemBaseName,
+        entry.count,
+        entry.propertiesSignature,
+        entry.exampleItemJson,
+        entry.exampleCharacterName,
+        entry.gameMode,
+        entry.season,
+        lastUpdated
+      );
+
+      paramIndex += 9;
+    }
+
+    await this.pool.query(
+      `INSERT INTO MirroredItemLeaderboard (
+        item_name, item_base_name, count, properties_signature,
+        example_item_json, example_character_name, game_mode, season, last_updated
+      )
+      VALUES ${values.join(", ")}
+      ON CONFLICT (season, game_mode, properties_signature)
+      DO UPDATE SET count = EXCLUDED.count, last_updated = EXCLUDED.last_updated`,
+      params
+    );
+  }
+
+  public async getMirroredLeaderboard(
+    gameMode: string,
+    season: number
+  ): Promise<any[]> {
+    const { rows } = await this.pool.query(
+      `SELECT *
+       FROM MirroredItemLeaderboard
+       WHERE game_mode = $1 AND season = $2
+       ORDER BY count DESC
+       LIMIT 10`,
+      [gameMode, season]
+    );
+    return rows;
   }
 
   public async close(): Promise<void> {

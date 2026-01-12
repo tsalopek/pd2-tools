@@ -199,19 +199,38 @@ export default function Account() {
                             <Text size="sm" c="dimmed">
                               Level
                             </Text>
-                            <Text fw={500}>{char.character.level}</Text>
+                            <Text
+                              fw={500}
+                              c={
+                                char.character.level === 99
+                                  ? "green"
+                                  : undefined
+                              }
+                            >
+                              {char.character.level}
+                            </Text>
                           </div>
                           <div>
                             <Text size="sm" c="dimmed">
                               Life
                             </Text>
-                            <Text fw={500}>{char.character.life}</Text>
+                            <Text
+                              fw={500}
+                              style={{ color: "rgb(239, 78, 78)" }}
+                            >
+                              {char.character.life}
+                            </Text>
                           </div>
                           <div>
                             <Text size="sm" c="dimmed">
                               Mana
                             </Text>
-                            <Text fw={500}>{char.character.mana}</Text>
+                            <Text
+                              fw={500}
+                              style={{ color: "rgb(36, 135, 235)" }}
+                            >
+                              {char.character.mana}
+                            </Text>
                           </div>
                           {topSkills.length > 0 && !isMobile && (
                             <div>

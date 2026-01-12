@@ -31,4 +31,8 @@ export const API_ENDPOINTS = {
 
   // Health
   health: "/health",
+
+  // Leaderboard
+  leaderboardLevel99: "/leaderboard/level99",
+  leaderboardMirrored: "/leaderboard/mirrored",
 } as const;
