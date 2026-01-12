@@ -1755,4 +1755,204 @@ describe("CharacterDB_Postgres - Season Tracking", () => {
       expect(snapshots).toHaveLength(0); // All snapshots should be deleted
     });
   });
+
+  describe("Leaderboard Database Methods", () => {
+    beforeEach(async () => {
+      // Clear leaderboard tables for both seasons and gamemodes
+      await db.deleteLevel99LeaderboardEntries(season11, gameModeSC);
+      await db.deleteLevel99LeaderboardEntries(season12, gameModeSC);
+      await db.deleteLevel99LeaderboardEntries(season11, gameModeHC);
+      await db.deleteLevel99LeaderboardEntries(season12, gameModeHC);
+      await db.deleteMirroredLeaderboardEntries(season11, gameModeSC);
+      await db.deleteMirroredLeaderboardEntries(season12, gameModeSC);
+      await db.deleteMirroredLeaderboardEntries(season11, gameModeHC);
+      await db.deleteMirroredLeaderboardEntries(season12, gameModeHC);
+    });
+
+    describe("Level 99 Account Leaderboard", () => {
+      it("should count level 99 characters per account", async () => {
+        const char1 = JSON.parse(JSON.stringify(sampleChar1_Sorc));
+        char1.character.level = 99;
+        char1.character.experience = 3520485254;
+        char1.character.name = "Char99_1";
+
+        const char2 = JSON.parse(JSON.stringify(sampleChar2_Pala));
+        char2.character.level = 99;
+        char2.character.experience = 3520485254;
+        char2.character.name = "Char99_2";
+
+        await db.ingestCharacter(char1, gameModeSC, season12, "TestAccount1");
+        await db.ingestCharacter(char2, gameModeSC, season12, "TestAccount1");
+
+        const gameModeId = await db.getGameModeId(gameModeSC);
+        const accounts = await db.getLevel99AccountCounts(
+          season12,
+          gameModeId,
+          100
+        );
+
+        expect(accounts.length).toBeGreaterThanOrEqual(1);
+        const testAccount = accounts.find(
+          (a) => a.account_name === "TestAccount1"
+        );
+        expect(testAccount).toBeDefined();
+        expect(testAccount.count).toBe(2);
+      });
+
+      it("should insert and retrieve level 99 leaderboard entries", async () => {
+        const entries = [
+          {
+            accountName: "TopAccount",
+            count: 5,
+            gameMode: gameModeSC,
+            season: season12,
+          },
+        ];
+
+        await db.insertLevel99LeaderboardEntries(entries, Date.now());
+        const results = await db.getLevel99Leaderboard(gameModeSC, season12);
+
+        expect(results.length).toBe(1);
+        expect(results[0].account_name).toBe("TopAccount");
+        expect(results[0].count).toBe(5);
+      });
+
+      it("should handle upsert on level 99 leaderboard", async () => {
+        const entries = [
+          {
+            accountName: "TestAccount",
+            count: 3,
+            gameMode: gameModeSC,
+            season: season12,
+          },
+        ];
+
+        await db.insertLevel99LeaderboardEntries(entries, Date.now());
+
+        const updatedEntries = [
+          {
+            accountName: "TestAccount",
+            count: 7,
+            gameMode: gameModeSC,
+            season: season12,
+          },
+        ];
+
+        await db.insertLevel99LeaderboardEntries(updatedEntries, Date.now());
+        const results = await db.getLevel99Leaderboard(gameModeSC, season12);
+
+        expect(results.length).toBe(1);
+        expect(results[0].count).toBe(7);
+      });
+
+      it("should delete level 99 leaderboard entries by season/gamemode", async () => {
+        const entry = {
+          accountName: "TestAccount",
+          count: 5,
+          gameMode: gameModeSC,
+          season: season12,
+        };
+
+        await db.insertLevel99LeaderboardEntries([entry], Date.now());
+        await db.deleteLevel99LeaderboardEntries(season12, gameModeSC);
+
+        const results = await db.getLevel99Leaderboard(gameModeSC, season12);
+        expect(results.length).toBe(0);
+      });
+    });
+
+    describe("Mirrored Item Leaderboard", () => {
+      it("should insert and retrieve mirrored item leaderboard entries", async () => {
+        const mockMirroredItem = {
+          name: "Harlequin Crest",
+          base: { name: "Shako" },
+          quality: { name: "Unique" },
+          is_ethereal: false,
+          modifiers: [{ label: "+2 to All Skills" }, { label: "Mirrored" }],
+        };
+
+        const entries = [
+          {
+            itemName: "Harlequin Crest",
+            itemBaseName: "Shako",
+            count: 15,
+            propertiesSignature: JSON.stringify(mockMirroredItem),
+            exampleItemJson: mockMirroredItem,
+            exampleCharacterName: "TestChar1",
+            gameMode: gameModeSC,
+            season: season12,
+          },
+        ];
+
+        await db.insertMirroredLeaderboardEntries(entries, Date.now());
+        const results = await db.getMirroredLeaderboard(gameModeSC, season12);
+
+        expect(results.length).toBe(1);
+        expect(results[0].item_name).toBe("Harlequin Crest");
+        expect(results[0].count).toBe(15);
+        expect(results[0].example_item_json).toBeDefined();
+      });
+
+      it("should handle upsert on mirrored leaderboard", async () => {
+        const mockItem = {
+          name: "Griffon's Eye",
+          properties: ["Mirrored"],
+        };
+
+        const entries = [
+          {
+            itemName: "Griffon's Eye",
+            itemBaseName: "Diadem",
+            count: 10,
+            propertiesSignature: "sig123",
+            exampleItemJson: mockItem,
+            exampleCharacterName: "Char1",
+            gameMode: gameModeSC,
+            season: season12,
+          },
+        ];
+
+        await db.insertMirroredLeaderboardEntries(entries, Date.now());
+
+        const updatedEntries = [
+          {
+            itemName: "Griffon's Eye",
+            itemBaseName: "Diadem",
+            count: 25,
+            propertiesSignature: "sig123",
+            exampleItemJson: mockItem,
+            exampleCharacterName: "Char1",
+            gameMode: gameModeSC,
+            season: season12,
+          },
+        ];
+
+        await db.insertMirroredLeaderboardEntries(updatedEntries, Date.now());
+        const results = await db.getMirroredLeaderboard(gameModeSC, season12);
+
+        expect(results.length).toBe(1);
+        expect(results[0].count).toBe(25);
+      });
+
+      it("should delete mirrored leaderboard entries by season/gamemode", async () => {
+        const mockItem = { name: "Test", properties: ["Mirrored"] };
+        const entry = {
+          itemName: "Test Item",
+          itemBaseName: "Test Base",
+          count: 5,
+          propertiesSignature: "test-sig",
+          exampleItemJson: mockItem,
+          exampleCharacterName: "TestChar",
+          gameMode: gameModeSC,
+          season: season12,
+        };
+
+        await db.insertMirroredLeaderboardEntries([entry], Date.now());
+        await db.deleteMirroredLeaderboardEntries(season12, gameModeSC);
+
+        const results = await db.getMirroredLeaderboard(gameModeSC, season12);
+        expect(results.length).toBe(0);
+      });
+    });
+  });
 });

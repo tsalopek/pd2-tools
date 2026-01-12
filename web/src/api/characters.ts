@@ -228,6 +228,8 @@ export const charactersAPI = {
    * Manually refresh character data from PD2 API
    */
   async refreshCharacter(name: string): Promise<FullCharacterResponse> {
-    return apiClient.post<FullCharacterResponse>(`${API_ENDPOINTS.character}/${name}/refresh`);
+    return apiClient.post<FullCharacterResponse>(
+      `${API_ENDPOINTS.character}/${name}/refresh`
+    );
   },
 };

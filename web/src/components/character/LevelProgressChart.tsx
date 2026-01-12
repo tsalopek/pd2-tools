@@ -174,9 +174,11 @@ export function LevelProgressChart({
                         Level: {data.Level}
                         {data.Level === 99 && " (Max)"}
                       </Text>
-                      {data.experience >= 0 && <Text size="sm">
-                        Experience: {formatExperience(data.experience)}
-                      </Text>}
+                      {data.experience >= 0 && (
+                        <Text size="sm">
+                          Experience: {formatExperience(data.experience)}
+                        </Text>
+                      )}
                       {percent !== null && data.experience >= 0 && (
                         <Text size="sm">
                           Progress to {data.Level + 1}: {percent.toFixed(1)}%

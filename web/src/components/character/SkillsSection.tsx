@@ -75,62 +75,63 @@ export function SkillsSection({
           )
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([category, categorySkills]) => (
-            <div key={category} style={{ marginBottom: "14px" }}>
-              <Text
-                fw={600}
-                size="sm"
-                style={{
-                  marginBottom: "2px",
-                  color: "#e0e0e0",
-                  letterSpacing: 0.2,
-                  paddingLeft: 2,
-                  fontSize: "13px",
-                  textTransform: "uppercase",
-                }}
-              >
-                {category}
-              </Text>
-              <div
-                style={{
-                  borderRadius: "7px",
-                  padding: "7px 10px 7px 10px",
-                }}
-              >
-                {categorySkills.map((skill, idx) => (
-                  <Text
-                    size="sm"
-                    key={skill.skill}
-                    style={{
-                      marginBottom: idx < categorySkills.length - 1 ? "2px" : 0,
-                      color: "#f3f3f3",
-                      fontSize: "13px",
-                      paddingLeft: 2,
-                    }}
-                  >
-                    <span style={{ color: "#C1C2C5" }}>{skill.skill}</span>:{" "}
-                    <Tooltip label="Base level">
-                      <span style={{ color: "#fff" }}>{skill.baseLevel}</span>
-                    </Tooltip>{" "}
-                    /{" "}
-                    <Tooltip label="Level including +skills">
-                      <span style={{ color: "#eef211" }}>{skill.level}</span>
-                    </Tooltip>
-                    {hasCta && (
-                      <>
-                        {" "}
-                        /{" "}
-                        <Tooltip label="Level including CTA">
-                          <span style={{ color: "#0de03b" }}>
-                            {skill.level + 1}
-                          </span>
-                        </Tooltip>
-                      </>
-                    )}
-                  </Text>
-                ))}
+              <div key={category} style={{ marginBottom: "14px" }}>
+                <Text
+                  fw={600}
+                  size="sm"
+                  style={{
+                    marginBottom: "2px",
+                    color: "#e0e0e0",
+                    letterSpacing: 0.2,
+                    paddingLeft: 2,
+                    fontSize: "13px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {category}
+                </Text>
+                <div
+                  style={{
+                    borderRadius: "7px",
+                    padding: "7px 10px 7px 10px",
+                  }}
+                >
+                  {categorySkills.map((skill, idx) => (
+                    <Text
+                      size="sm"
+                      key={skill.skill}
+                      style={{
+                        marginBottom:
+                          idx < categorySkills.length - 1 ? "2px" : 0,
+                        color: "#f3f3f3",
+                        fontSize: "13px",
+                        paddingLeft: 2,
+                      }}
+                    >
+                      <span style={{ color: "#C1C2C5" }}>{skill.skill}</span>:{" "}
+                      <Tooltip label="Base level">
+                        <span style={{ color: "#fff" }}>{skill.baseLevel}</span>
+                      </Tooltip>{" "}
+                      /{" "}
+                      <Tooltip label="Level including +skills">
+                        <span style={{ color: "#eef211" }}>{skill.level}</span>
+                      </Tooltip>
+                      {hasCta && (
+                        <>
+                          {" "}
+                          /{" "}
+                          <Tooltip label="Level including CTA">
+                            <span style={{ color: "#0de03b" }}>
+                              {skill.level + 1}
+                            </span>
+                          </Tooltip>
+                        </>
+                      )}
+                    </Text>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       ) : (
         <div

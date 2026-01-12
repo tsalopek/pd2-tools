@@ -1,5 +1,6 @@
 import { startCharacterScraper } from "./jobs/character-scraper";
 import { startOnlinePlayersTracker } from "./jobs/online-players-tracker";
+import { startLeaderboardUpdater } from "./jobs/leaderboard-updater";
 import { logger as mainLogger } from "./config";
 
 const logger = mainLogger.createNamedLogger("Jobs");
@@ -12,4 +13,8 @@ startCharacterScraper().catch((error) => {
 
 startOnlinePlayersTracker().catch((error) => {
   logger.error("Failed to start online players tracker:", error);
+});
+
+startLeaderboardUpdater().catch((error) => {
+  logger.error("Failed to start leaderboard updater:", error);
 });

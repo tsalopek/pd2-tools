@@ -13,7 +13,12 @@ import {
   Tooltip,
   Alert,
 } from "@mantine/core";
-import { IconX, IconSettings, IconInfoCircle, IconUserPlus } from "@tabler/icons-react";
+import {
+  IconX,
+  IconSettings,
+  IconInfoCircle,
+  IconUserPlus,
+} from "@tabler/icons-react";
 import { useMediaQuery } from "@mantine/hooks";
 import Cookies from "js-cookie";
 import debounce from "lodash/debounce";
@@ -110,7 +115,9 @@ interface AccountQueueModalProps {
 function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
   const [accountName, setAccountName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [queuedAccountName, setQueuedAccountName] = useState<string | null>(null);
+  const [queuedAccountName, setQueuedAccountName] = useState<string | null>(
+    null
+  );
   const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -127,16 +134,19 @@ function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
 
       // Format estimated time
       const estimatedMinutes = Math.ceil(response.estimatedSeconds / 60);
-      const timeString = estimatedMinutes > 1
-        ? `${estimatedMinutes} minutes`
-        : `${response.estimatedSeconds} seconds`;
+      const timeString =
+        estimatedMinutes > 1
+          ? `${estimatedMinutes} minutes`
+          : `${response.estimatedSeconds} seconds`;
 
       setQueuedAccountName(response.accountName);
       setEstimatedTime(timeString);
       setSuccessMessage(response.message);
       setAccountName("");
     } catch (error: any) {
-      setErrorMessage(error.data?.error || error.message || "Failed to queue account");
+      setErrorMessage(
+        error.data?.error || error.message || "Failed to queue account"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +174,8 @@ function AccountQueueModal({ opened, onClose }: AccountQueueModalProps) {
     >
       <div>
         <Text size="sm" mb="md" c="dimmed">
-          Enter an <strong>account name</strong> (not character name) to add it to pd2.tools. All ladder characters level 80+ on this account will be
+          Enter an <strong>account name</strong> (not character name) to add it
+          to pd2.tools. All ladder characters level 80+ on this account will be
           added to the website.
         </Text>
 
