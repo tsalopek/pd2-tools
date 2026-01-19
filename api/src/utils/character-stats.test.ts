@@ -80,13 +80,13 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.fcr).toBe(0);
-      expect(stats.ias).toBe(0);
-      expect(stats.mf).toBe(0);
-      expect(stats.gf).toBe(0);
-      expect(stats.frw).toBe(0);
-      expect(stats.pdr).toBe(0);
-      expect(stats.fhr).toBe(0);
+      expect(stats.fasterCastRate).toBe(0);
+      expect(stats.increasedAttackSpeed).toBe(0);
+      expect(stats.magicFind).toBe(0);
+      expect(stats.goldFind).toBe(0);
+      expect(stats.fasterRunWalk).toBe(0);
+      expect(stats.physicalDamageReduction).toBe(0);
+      expect(stats.fasterHitRecovery).toBe(0);
     });
   });
 
@@ -230,7 +230,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.fcr).toBe(20);
+      expect(stats.fasterCastRate).toBe(20);
     });
 
     it("should parse increased attack speed", () => {
@@ -239,7 +239,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.ias).toBe(30);
+      expect(stats.increasedAttackSpeed).toBe(30);
     });
 
     it("should parse faster run/walk", () => {
@@ -248,7 +248,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.frw).toBe(25);
+      expect(stats.fasterRunWalk).toBe(25);
     });
 
     it("should parse faster hit recovery", () => {
@@ -257,7 +257,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.fhr).toBe(15);
+      expect(stats.fasterHitRecovery).toBe(15);
     });
 
     it("should stack speed bonuses", () => {
@@ -275,8 +275,122 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.fcr).toBe(30);
-      expect(stats.frw).toBe(25);
+      expect(stats.fasterCastRate).toBe(30);
+      expect(stats.fasterRunWalk).toBe(25);
+    });
+  });
+
+  describe("Leech Stats Parsing", () => {
+    it("should parse life leech", () => {
+      const items = [createMockItem("Item1", ["8% Life stolen per hit"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.lifeLeech).toBe(8);
+    });
+
+    it("should parse mana leech", () => {
+      const items = [createMockItem("Item1", ["3% Mana stolen per hit"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.manaLeech).toBe(3);
+    });
+
+    it("should parse life after each kill", () => {
+      const items = [createMockItem("Item1", ["4 Life after each Kill"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.hpPerKill).toBe(4);
+    });
+
+    it("should parse mana after each kill", () => {
+      const items = [createMockItem("Item1", ["5 to Mana after each Kill"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.mpPerKill).toBe(5);
+    });
+  });
+
+  describe("Elemental Skill Damage Stats Parsing", () => {
+    it("should parse fire skill damage", () => {
+      const items = [createMockItem("Item1", ["8% to Fire Skill Damage"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.fireSkillDamage).toBe(8);
+    });
+
+    it("should parse cold skill damage", () => {
+      const items = [createMockItem("Item1", ["3% to Cold Skill Damage"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.coldSkillDamage).toBe(3);
+    });
+
+    it("should parse lightning skill damage", () => {
+      const items = [createMockItem("Item1", ["4% to Lightning Skill Damage"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.lightningSkillDamage).toBe(4);
+    });
+
+    it("should parse poison skill damage", () => {
+      const items = [createMockItem("Item1", ["5% to Poison Skill Damage"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.poisonSkillDamage).toBe(5);
+    });
+  });
+
+  describe("Elemental Pierce Parsing", () => {
+    it("should parse fire pierce", () => {
+      const items = [createMockItem("Item1", ["-8% to Enemy Fire Resistance"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.firePierce).toBe(-8);
+    });
+
+    it("should parse cold pierce", () => {
+      const items = [createMockItem("Item1", ["-3% to Enemy Cold Resistance"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.coldPierce).toBe(-3);
+    });
+
+    it("should parse lightning pierce", () => {
+      const items = [createMockItem("Item1", ["-4% to Enemy Lightning Resistance"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.lightningPierce).toBe(-4);
+    });
+
+    it("should parse poison pierce", () => {
+      const items = [createMockItem("Item1", ["-5% to Enemy Poison Resistance"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.poisonPierce).toBe(-5);
     });
   });
 
@@ -289,7 +403,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.mf).toBe(50);
+      expect(stats.magicFind).toBe(50);
     });
 
     it("should parse gold find", () => {
@@ -298,7 +412,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.gf).toBe(30);
+      expect(stats.goldFind).toBe(30);
     });
 
     it("should ignore MF from Enigma", () => {
@@ -312,7 +426,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.mf).toBe(25); // Only from Other Item
+      expect(stats.magicFind).toBe(25); // Only from Other Item
     });
 
     it("should stack MF from multiple items", () => {
@@ -324,7 +438,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.mf).toBe(90);
+      expect(stats.magicFind).toBe(90);
     });
   });
 
@@ -382,6 +496,61 @@ describe("StatParser", () => {
 
       expect(stats.lAbsorbFlat).toBe(25);
     });
+
+    it("should parse magic absorb flat", () => {
+      const items = [createMockItem("Item1", ["+5 Magic Absorb"])];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.mAbsorbFlat).toBe(5);
+    });
+  });
+
+  describe("Damage Procs", () => {
+    it("should parse crushing blow", () => {
+      const items = [
+        createMockItem("Item1", ["+25% Chance of Crushing Blow"]),
+      ];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.crushingBlow).toBe(25);
+    });
+
+    it("should parse deadly strike", () => {
+      const items = [
+        createMockItem("Item1", ["+33% Deadly Strike"])
+      ];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.deadlyStrike).toBe(33);
+    });
+
+    it("should parse open wounds", () => {
+      const items = [
+        createMockItem("Item1", ["+50% Chance of Open Wounds"])
+      ];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.openWounds).toBe(50);
+    });
+
+    it("should parse open wounds additional dps", () => {
+      const items = [
+        createMockItem("Item1", ["+500 Open Wounds Damage Per Second"])
+      ];
+      const char = createMockCharacter(items);
+      const parser = new CharacterStatParser(char);
+      const stats = parser.parseAndGetCharStats();
+
+      expect(stats.openWoundsDPS).toBe(500);
+    });
   });
 
   describe("Physical Damage Reduction", () => {
@@ -393,7 +562,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.pdr).toBe(15);
+      expect(stats.physicalDamageReduction).toBe(15);
     });
 
     it("should stack PDR from multiple items", () => {
@@ -405,7 +574,7 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.pdr).toBe(15);
+      expect(stats.physicalDamageReduction).toBe(15);
     });
   });
 
@@ -460,8 +629,8 @@ describe("StatParser", () => {
 
       expect(stats.fireRes).toBe(-55);
       expect(stats.strength).toBe(125);
-      expect(stats.fcr).toBe(20);
-      expect(stats.mf).toBe(50);
+      expect(stats.fasterCastRate).toBe(20);
+      expect(stats.magicFind).toBe(50);
       expect(stats.energy).toBe(160);
     });
 
@@ -485,11 +654,11 @@ describe("StatParser", () => {
       const parser = new CharacterStatParser(char);
       const stats = parser.parseAndGetCharStats();
 
-      expect(stats.fcr).toBe(40); // 20 + 20
-      expect(stats.frw).toBe(30);
+      expect(stats.fasterCastRate).toBe(40); // 20 + 20
+      expect(stats.fasterRunWalk).toBe(30);
       expect(stats.fireRes).toBe(-35); // -70 + 20 + 15
-      expect(stats.mf).toBe(50);
-      expect(stats.gf).toBe(50);
+      expect(stats.magicFind).toBe(50);
+      expect(stats.goldFind).toBe(50);
     });
   });
 
@@ -509,7 +678,7 @@ describe("StatParser", () => {
       const stats = parser.parseAndGetCharStats();
 
       expect(stats.strength).toBe(100);
-      expect(stats.fcr).toBe(0);
+      expect(stats.fasterCastRate).toBe(0);
     });
 
     it("should handle properties with no numeric values", () => {
@@ -533,7 +702,7 @@ describe("StatParser", () => {
       const stats = parser.parseAndGetCharStats();
 
       expect(stats.strength).toBe(1099);
-      expect(stats.fcr).toBe(999);
+      expect(stats.fasterCastRate).toBe(999);
     });
   });
 });
