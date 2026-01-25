@@ -6,7 +6,7 @@ import {
   useMantineReactTable,
 } from "mantine-react-table";
 import { IconGrave } from "@tabler/icons-react";
-import { Tooltip } from "@mantine/core";
+import { Tooltip, TextInput, Group, Text } from "@mantine/core";
 import Cookies from "js-cookie";
 import { charactersAPI } from "../../../api";
 import type { FullCharacterResponse } from "../../../types";
@@ -30,6 +30,7 @@ interface PlayerTableProps {
   filters: CharacterFilters;
   characters?: ApiCharacter[];
   total?: number;
+  updateFilters: (updates: Partial<CharacterFilters>) => void;
 }
 
 //TODO: Refactor, proper stage mgmt
@@ -37,6 +38,7 @@ export default function PlayerTable({
   filters,
   characters: initialCharacters,
   total: initialTotal,
+  updateFilters,
 }: PlayerTableProps) {
   // Data state for the current page of characters
   const [characterData, setCharacterData] = useState<ApiCharacter[]>([]);
@@ -44,10 +46,25 @@ export default function PlayerTable({
   const [isLoading, setIsLoading] = useState(true); // For initial load of the table
   const [isRefetching, setIsRefetching] = useState(false); // For subsequent page/filter changes
   const [totalRowCount, setTotalRowCount] = useState(0);
+  const [searchInput, setSearchInput] = useState(filters.searchQuery || "");
   const [pagination, setPagination] = useState<MRT_PaginationState>({
     pageIndex: 0,
     pageSize: 40,
   });
+
+  // Effect to handle search input changes with debouncing
+  useEffect(() => {
+    // Only update filter if search is 3+ characters or empty
+    if (searchInput.length >= 3 || searchInput.length === 0) {
+      const timeoutId = setTimeout(() => {
+        updateFilters({ searchQuery: searchInput });
+        // Reset to first page when search changes
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }, 300); // 300ms debounce
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchInput, updateFilters]);
+
   // Effect to fetch data when pagination or filters change
   useEffect(() => {
     const fetchCharacters = async () => {
@@ -93,10 +110,6 @@ export default function PlayerTable({
           if (filters.mercItemFilter.length) {
             queryParams.append("mercItems", filters.mercItemFilter.join(","));
           }
-          if (filters.searchQuery) {
-            // Assuming 'query' is the param name for search
-            queryParams.append("query", filters.searchQuery);
-          }
 
           const levelRangeCookie = Cookies.get("levelRange");
           const levelRange = levelRangeCookie
@@ -116,6 +129,7 @@ export default function PlayerTable({
               requiredMercItems: filters.mercItemFilter,
               levelRange: { min: levelRange.min, max: levelRange.max },
               season: filters.season,
+              query: filters.searchQuery || undefined,
             },
             pagination.pageIndex + 1,
             pagination.pageSize
@@ -262,6 +276,20 @@ export default function PlayerTable({
     enableColumnFilters: false,
     enableSorting: true,
 
+    renderTopToolbarCustomActions: () => (
+      <Group gap="md" style={{ padding: "8px 0" }}>
+        <TextInput
+          placeholder="Search by character name..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.currentTarget.value)}
+          style={{ width: "300px" }}
+        />
+        <Text size="sm" c="dimmed">
+          {totalRowCount.toLocaleString()} characters found
+        </Text>
+      </Group>
+    ),
+
     state: {
       isLoading: isLoading,
       showProgressBars: isRefetching,
@@ -302,7 +330,7 @@ export default function PlayerTable({
       size: 1,
     },
     enableRowVirtualization: false,
-    enableTopToolbar: false,
+    enableTopToolbar: true,
     enableBottomToolbar: true,
     paginationDisplayMode: "default",
 

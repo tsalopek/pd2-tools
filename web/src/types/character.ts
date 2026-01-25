@@ -61,6 +61,7 @@ export interface CharacterFilter {
     max?: number;
   };
   season?: number;
+  query?: string;
 }
 
 export interface CharacterListResponse {

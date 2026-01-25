@@ -113,6 +113,7 @@ export default function Builds() {
                     filters={filters}
                     characters={data.characters}
                     total={data.total}
+                    updateFilters={updateFilters}
                   />
                 ) : (
                   <Skeleton height="612px" />
@@ -201,6 +202,7 @@ export default function Builds() {
                     filters={filters}
                     characters={data.characters}
                     total={data.total}
+                    updateFilters={updateFilters}
                   />
                 ) : (
                   <Skeleton height="612px" />
