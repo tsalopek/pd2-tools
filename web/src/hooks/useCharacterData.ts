@@ -61,6 +61,7 @@ export function useCharacterData(
               requiredMercItems: filters.mercItemFilter,
               levelRange: { min: filters.minLevel, max: filters.maxLevel },
               season: filters.season,
+              query: filters.searchQuery || undefined,
             },
             1,
             40
@@ -144,6 +145,7 @@ export function useCharacterData(
     filters.minLevel,
     filters.maxLevel,
     filters.season,
+    filters.searchQuery,
   ]);
 
   return {

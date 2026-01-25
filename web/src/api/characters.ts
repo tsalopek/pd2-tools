@@ -37,6 +37,7 @@ export const charactersAPI = {
       minLevel: filter.levelRange?.min,
       maxLevel: filter.levelRange?.max,
       season: filter.season,
+      query: filter.query,
     });
   },
 
