@@ -16,7 +16,7 @@ interface Props {
   data: {
     itemUsage: ItemUsageStats[];
   };
-  filters: Pick<CharacterFilters, "itemFilter" | "searchQuery">;
+  filters: Pick<CharacterFilters, "itemFilter" | "filterSearchQuery">;
   updateFilters: (filters: Partial<{ itemFilter: string[] }>) => void;
 }
 
@@ -54,7 +54,7 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
 
   const itemPercentages = useMemo(() => {
     if (!data.itemUsage) return [];
-    const searchQuery = filters.searchQuery?.toLowerCase() || "";
+    const searchQuery = filters.filterSearchQuery?.toLowerCase() || "";
 
     // Single pass transformation and filtering
     return data.itemUsage
@@ -85,7 +85,7 @@ export default function UniqueCard({ data, filters, updateFilters }: Props) {
           b.percentage - a.percentage ||
           Number(b.isSelected) - Number(a.isSelected)
       );
-  }, [data.itemUsage, filters.searchQuery, selectedItemsSet]);
+  }, [data.itemUsage, filters.filterSearchQuery, selectedItemsSet]);
 
   const getItemTypeColor = (type: string) => {
     switch (type) {

@@ -56,6 +56,7 @@ export interface CharacterFilter {
   requiredSkills?: Array<{ name: string; minLevel: number }>;
   requiredMercTypes?: string[];
   requiredMercItems?: string[];
+  query?: string;
   levelRange?: {
     min?: number;
     max?: number;

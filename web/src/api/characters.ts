@@ -36,6 +36,7 @@ export const charactersAPI = {
       mercItems: filter.requiredMercItems?.join(","),
       minLevel: filter.levelRange?.min,
       maxLevel: filter.levelRange?.max,
+      query: filter.query,
       season: filter.season,
     });
   },

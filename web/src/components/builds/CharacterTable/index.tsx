@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   MantineReactTable,
   MRT_ColumnDef,
@@ -21,7 +21,7 @@ interface TransformedCharacterRow {
   dead?: boolean;
   life: number;
   mana: number;
-  realSks: Array<{ skill: string; level: number; [key: string]: unknown }>;
+  realSks: Array<{ skill: string; level: number;[key: string]: unknown }>;
   highestSkLevel?: number;
   rank?: number;
 }
@@ -48,9 +48,12 @@ export default function PlayerTable({
     pageIndex: 0,
     pageSize: 40,
   });
+  const requestIdRef = useRef(0);
+
   // Effect to fetch data when pagination or filters change
   useEffect(() => {
     const fetchCharacters = async () => {
+      const requestId = ++requestIdRef.current;
       // If we have initial characters and this is not a pagination request,
       // use those instead of making an API call
       if (initialCharacters && pagination.pageIndex === 0) {
@@ -93,10 +96,6 @@ export default function PlayerTable({
           if (filters.mercItemFilter.length) {
             queryParams.append("mercItems", filters.mercItemFilter.join(","));
           }
-          if (filters.searchQuery) {
-            // Assuming 'query' is the param name for search
-            queryParams.append("query", filters.searchQuery);
-          }
 
           const levelRangeCookie = Cookies.get("levelRange");
           const levelRange = levelRangeCookie
@@ -116,24 +115,31 @@ export default function PlayerTable({
               requiredMercItems: filters.mercItemFilter,
               levelRange: { min: levelRange.min, max: levelRange.max },
               season: filters.season,
+              query: filters.searchQuery || undefined,
             },
             pagination.pageIndex + 1,
             pagination.pageSize
           ); // page is 1-indexed in API
 
-          setCharacterData(jsonResponse.characters || []);
-          // Make sure to set the total count from the API response
-          setTotalRowCount(jsonResponse.total || 1000); // Use actual total from API
+          if (requestId === requestIdRef.current) {
+            setCharacterData(jsonResponse.characters || []);
+            // Make sure to set the total count from the API response
+            setTotalRowCount(jsonResponse.total || 1000); // Use actual total from API
+          }
         } catch (error) {
           console.error("Failed to fetch characters for table:", error);
-          setIsError(true);
-          setCharacterData([]); // Clear data on error
-          setTotalRowCount(0);
+          if (requestId === requestIdRef.current) {
+            setIsError(true);
+            setCharacterData([]); // Clear data on error
+            setTotalRowCount(0);
+          }
         }
       }
 
-      setIsLoading(false);
-      setIsRefetching(false);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+        setIsRefetching(false);
+      }
     };
 
     fetchCharacters();
@@ -149,21 +155,22 @@ export default function PlayerTable({
   // Transform fetched data for table display
   const tableDisplayData = useMemo<TransformedCharacterRow[]>(() => {
     if (!characterData) return [];
-    return characterData.map((charResponse) => ({
-      name: charResponse.character?.name || "",
-      level: charResponse.character?.level || 0,
-      class: charResponse.character?.class?.name || "",
-      dead: (charResponse as any).lbInfo?.dead, // lbInfo is in the extended response
-      life: charResponse.character?.life || 0,
-      mana: charResponse.character?.mana || 0,
-      realSks: (charResponse.realSkills || []) as Array<{
-        skill: string;
-        level: number;
-        [key: string]: unknown;
-      }>,
-      highestSkLevel: (charResponse.realSkills?.[0] as any)?.level,
-      rank: (charResponse as any).lbInfo?.rank, // If using rank
-    }));
+    return characterData
+      .map((charResponse) => ({
+        name: charResponse.character?.name || "",
+        level: charResponse.character?.level || 0,
+        class: charResponse.character?.class?.name || "",
+        dead: (charResponse as any).lbInfo?.dead, // lbInfo is in the extended response
+        life: charResponse.character?.life || 0,
+        mana: charResponse.character?.mana || 0,
+        realSks: (charResponse.realSkills || []) as Array<{
+          skill: string;
+          level: number;
+          [key: string]: unknown;
+        }>,
+        highestSkLevel: (charResponse.realSkills?.[0] as any)?.level,
+        rank: (charResponse as any).lbInfo?.rank, // If using rank
+      }));
   }, [characterData]);
 
   const columns = useMemo<MRT_ColumnDef<TransformedCharacterRow>[]>(
@@ -277,8 +284,19 @@ export default function PlayerTable({
     },
     mantinePaperProps: {
       style: {
+        position: "relative",
         boxShadow:
           "0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25)",
+      },
+    },
+    mantineTopToolbarProps: {
+      style: {
+        position: "absolute",
+        top: 0,
+        right: 0,
+        padding: "6px 8px",
+        minHeight: "unset",
+        background: "transparent",
       },
     },
     mantineTableProps: {
@@ -366,9 +384,9 @@ export default function PlayerTable({
     },
     muiToolbarAlertBannerProps: isError
       ? {
-          color: "error",
-          children: "Error loading character data. Please try again.",
-        }
+        color: "error",
+        children: "Error loading character data. Please try again.",
+      }
       : undefined,
   });
 
